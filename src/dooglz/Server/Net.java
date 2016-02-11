@@ -18,14 +18,17 @@ import java.util.Collection;
 public class Net extends WebSocketServer {
     public Net(int port) throws UnknownHostException {
         super(new InetSocketAddress(port));
+
     }
 
     public Net(InetSocketAddress address) {
         super(address);
+
     }
 
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
+        conn.DEBUG = false;
         this.sendToAll("new connection: " + handshake.getResourceDescriptor());
         System.out.println(conn.getRemoteSocketAddress().getAddress().getHostAddress() + " entered the room!");
     }
@@ -64,5 +67,40 @@ public class Net extends WebSocketServer {
                 c.send(text);
             }
         }
+    }
+
+    public void sendTo(String text, int id) {
+        if (id >= 0 && id < connections().size()) {
+            Collection<WebSocket> con = connections();
+            synchronized (con) {
+                int i = 0;
+                for (WebSocket c : con) {
+                    if (i == id) {
+                        c.send(text);
+                        break;
+                    }
+                    ++i;
+                }
+            }
+        }
+    }
+
+    public void List() {
+        Collection<WebSocket> con = connections();
+        synchronized (con) {
+            int i = 0;
+            for (WebSocket c : con) {
+                System.out.println(i + " " + c.getRemoteSocketAddress());
+                ++i;
+            }
+        }
+    }
+
+    public void sendToAll(Command c) {
+        this.sendToAll(Proto.gson.toJson(c));
+    }
+
+    public void sendTo(Command c, int id) {
+        this.sendTo(Proto.gson.toJson(c), id);
     }
 }

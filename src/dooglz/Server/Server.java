@@ -24,25 +24,45 @@ public class Server {
         System.out.println("ChatServer started on port: " + s.getPort());
 
         BufferedReader sysin = new BufferedReader(new InputStreamReader(System.in));
-        while (true) {
+        boolean run = true;
+        while (run) {
             String in = sysin.readLine();
-            s.sendToAll(in);
-            if (in.equals("exit")) {
-                s.stop();
-                break;
-            } else if (in.equals("restart")) {
-                s.stop();
-                s.start();
-                break;
-            } else if (in.equals("Time")) {
-                Command c = new Command(System.currentTimeMillis(), false, "Time", "", "");
-                s.sendToAll(Proto.gson.toJson(c));
-            } else if (in.equals("cores")) {
-                Command c = new Command(System.currentTimeMillis(), false, "GetCores", "", "");
-                s.sendToAll(Proto.gson.toJson(c));
-            } else if (in.equals("HostName")) {
-                Command c = new Command(System.currentTimeMillis(), false, "HostName", "", "");
-                s.sendToAll(Proto.gson.toJson(c));
+            String[] splited = in.split("\\s+");
+            Command c;
+            switch (splited[0]) {
+                case "exit":
+                    s.stop();
+                    run = false;
+                    break;
+                case "ping":
+                    c = new Command(System.currentTimeMillis(), false, "Time", "", "");
+                    if (splited.length > 1) {
+                        s.sendTo(c, Integer.parseInt(splited[1]));
+                    } else {
+                        s.sendToAll(c);
+                    }
+                    break;
+                case "cores":
+                    c = new Command(System.currentTimeMillis(), false, "GetCores", "", "");
+                    if (splited.length > 1) {
+                        s.sendTo(c, Integer.parseInt(splited[1]));
+                    } else {
+                        s.sendToAll(c);
+                    }
+                    break;
+                case "name":
+                    c = new Command(System.currentTimeMillis(), false, "HostName", "", "");
+                    if (splited.length > 1) {
+                        s.sendTo(c, Integer.parseInt(splited[1]));
+                    } else {
+                        s.sendToAll(c);
+                    }
+                    break;
+                case "list":
+                    s.List();
+                    break;
+                default:
+                    break;
             }
         }
 
