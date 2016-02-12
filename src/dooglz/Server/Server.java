@@ -57,6 +57,8 @@ public class Server {
         String filename = DJSSP.saveSolution(solution, problem, SOL_DIR);
         JSSP.displaySolution(filename);
 
+        s.sendToAll( new Command(System.currentTimeMillis(), false, "NewProblem", Proto.gson.toJson(problem), ""));
+
         population = new int[MAIN_POP_SIZE][problem.getNumberOfMachines()][problem.getNumberOfJobs()];
         for (int i = 0; i < MAIN_POP_SIZE / 2; i++) {
             population[i] = SolutionGenerator.RndGenWeight(problem, i / (float) (MAIN_POP_SIZE / 2));
@@ -65,7 +67,7 @@ public class Server {
             population[i] = JSSP.getRandomSolution(problem);
         }
         //time to distribute
-        s.sendToAll( new Command(System.currentTimeMillis(), false, "Start", Proto.gson.toJson(population), ""));
+        s.sendToAll( new Command(System.currentTimeMillis(), false, "NewPopulation", Proto.gson.toJson(population), ""));
         state = States.Distrubuting;
     }
 

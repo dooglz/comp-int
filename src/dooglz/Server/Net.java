@@ -43,7 +43,7 @@ public class Net extends WebSocketServer {
     public void onMessage(WebSocket conn, String message) {
         //   this.sendToAll( message );
         System.out.println(conn + ": " + message);
-        dooglz.Proto.Parse(message, conn);
+        dooglz.Server.Proto.BParse(message, conn);
     }
 
     @Override

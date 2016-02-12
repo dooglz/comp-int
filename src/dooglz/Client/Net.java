@@ -29,7 +29,7 @@ public class Net extends WebSocketClient {
     @Override
     public void onMessage(String message) {
         System.out.println("received: " + message);
-        Proto.Parse(message, this.getConnection());
+        dooglz.Client.Proto.BParse(message, this.getConnection());
     }
 
     @Override

@@ -1,16 +1,28 @@
 package dooglz.Server;
 import dooglz.Command;
-
 import org.java_websocket.WebSocket;
 
 public class Proto extends dooglz.Proto {
-    /*
-    @Override
-    public void Send(Command c){
-        System.out.println(gson.toJson(c));
-    }
-    @Override
-    public void Parse(String s) {
-        super.s;
-    }*/
+    public static void Parse(String s, WebSocket ws) {
+            Command c;
+            try {
+                c = gson.fromJson(s, Command.class);
+            } catch (com.google.gson.JsonSyntaxException ex) {
+                return;
+            }
+            if (c.responce) {
+                switch (c.command) {
+                    default:
+                        BParse(s, ws);
+                        return;
+                }
+            }else{
+                switch (c.command) {
+                    default:
+                        BParse(s, ws);
+                        return;
+                }
+            }
+
+        }
 }

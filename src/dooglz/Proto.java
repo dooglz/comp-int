@@ -28,14 +28,13 @@ public class Proto {
         }
     }
 
-    public static void Parse(String s, WebSocket ws) {
+    public static void BParse(String s, WebSocket ws) {
         Command c;
         try {
             c = gson.fromJson(s, Command.class);
         } catch (com.google.gson.JsonSyntaxException ex) {
             return;
         }
-
 
         if (c.responce) {
             //peer is responding to us
