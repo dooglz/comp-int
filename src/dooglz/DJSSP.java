@@ -31,7 +31,7 @@ public class DJSSP {
             e.close();
             return filename;
         } catch (Exception var8) {
-            System.err.println("Error Writing File");
+            System.err.println("Error Writing File " + var8);
             return null;
         }
     }
