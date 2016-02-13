@@ -3,6 +3,7 @@ package dooglz.Client;
 import static dooglz.Constants.*;
 
 import dooglz.DJSSP;
+import dooglz.Tournament;
 import modelP.JSSP;
 import modelP.Problem;
 import org.java_websocket.drafts.Draft_17;
@@ -12,8 +13,19 @@ import java.net.URISyntaxException;
 
 
 public class Client {
+    public static int[][][] population;
+    public static Problem problem;
+
+    public enum States {
+        Connecting, Connected, Running
+    }
+
+    public static States state;
 
     public static void main(String[] args) {
+        population = null;
+        problem = null;
+        state = States.Connecting;
         System.out.println("Hello World Client!");
         Net c = null;
         final String uri = "ws://" + DEF_HOST + ":" + SERVER_PORT;
@@ -33,6 +45,7 @@ public class Client {
             } catch (InterruptedException e) {
             }
         }
+        state = States.Connected;
         while (c.getConnection().isOpen()) {
             try {
                 Thread.sleep(3000);
@@ -66,6 +79,36 @@ public class Client {
             population[i] = JSSP.getRandomSolution(problem);
         }
         */
-
     }
+
+    public static void Start(){
+        if(population == null || problem == null){
+            System.out.println("Params not ready for start");
+            return;
+        }
+        while( true) {
+            Tournament.Churn(population, problem, 100);
+        }
+    }
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
