@@ -1,11 +1,14 @@
 package dooglz;
 
-public class DMachine {
-    final public modelP.Operation[] popsOnMachine;
-    final public DOperation[] opsOnMachine;
+import java.util.ArrayList;
 
-    public DMachine(int opcount) {
-        this.popsOnMachine = new modelP.Operation[opcount];
-        this.opsOnMachine = new DOperation[opcount];
+public class DMachine {
+    final public ArrayList <modelP.Operation> popsOnMachine;
+    final public ArrayList <DOperation> opsOnMachine;
+    final public int id;
+    public DMachine(int opcount, int id) {
+        this.popsOnMachine = new ArrayList();
+        this.opsOnMachine = new ArrayList();
+        this.id = id;
     }
 }

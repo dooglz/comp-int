@@ -46,12 +46,13 @@ public class Server {
     }
 
     public static void Load(int id) {
+        /*
         if (id == 0) {
             id = ((int) (Math.random() * 141.0)) + 1;
         }
         problem = JSSP.getProblem(id);
         state = States.PreGen;
-        int[][] solution = SolutionGenerator.RndGenWeight(problem, 0.3f);
+        int[][] solution = //SolutionGenerator.RndGenWeight(problem, 0.3f);
 
         JSSP.printSolution(solution, problem);
         String filename = DJSSP.saveSolution(solution, problem, SOL_DIR);
@@ -69,6 +70,7 @@ public class Server {
         //time to distribute
         s.sendToAll( new Command(System.currentTimeMillis(), false, "NewPopulation", Proto.gson.toJson(population), ""));
         state = States.Distrubuting;
+        */
     }
 
     public static void Stop() {

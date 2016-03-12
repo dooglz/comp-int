@@ -12,7 +12,7 @@ public class DOperation {
     final modelP.Operation pop;
     final int duration;
 
-    public DOperation(DMachine[] machines, DJob job, modelP.Operation op) {
+    public DOperation(DMachine[] machines, DJob job, modelP.Operation op) throws IllegalStateException{
 
         this.job = job;
         this.pop = op;
@@ -23,7 +23,7 @@ public class DOperation {
             f.setAccessible(true);
             dur = (int) f.get(op);
         } catch (Exception e) {
-            System.exit(1);
+           throw new IllegalStateException();
         }
         this.duration = dur;
 
@@ -35,11 +35,13 @@ public class DOperation {
 
             f = modelP.Machine.class.getDeclaredField("id");
             f.setAccessible(true);
-            int id = (int) f.get(op);
+            int id = (int) f.get(m);
             mac = id;
         } catch (Exception e) {
-            System.exit(1);
+            throw new IllegalStateException();
         }
         this.machine = machines[mac];
+        this.machine.popsOnMachine.add(op);
+        this.machine.opsOnMachine.add(this);
     }
 }

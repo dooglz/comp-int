@@ -87,7 +87,7 @@ public class Client {
             return;
         }
         while( true) {
-            Tournament.Churn(population, problem, 100);
+           // Tournament.Churn(population, problem, 100);
         }
     }
 

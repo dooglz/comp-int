@@ -13,19 +13,15 @@ import dooglz.util;
 import static dooglz.util.*;
 
 
-class Sol implements Comparator<Sol> {
-    public int[][] sol;
-    public int age;
-    public int score;
-
-    @Override
-    public int compare(Sol a, Sol b) {
-        return a.score - b.score;
-    }
-}
-
 public class Tournament {
-    public static <E, L extends List<E>> void swap(final L list1, final L list2,
+    public static int machinecount;
+    public static int jobcount;
+    public Tournament(int machinecount, int jobcount){
+    this.machinecount = machinecount;
+        this.jobcount = jobcount;
+    }
+
+    public <E, L extends List<E>> void swap(final L list1, final L list2,
                                                    final int index) {
         final E temp = list1.get(index);
         list1.set(index, list2.get(index));
@@ -33,27 +29,27 @@ public class Tournament {
 
     }
 
-    public static <E, L extends List<E>> void swap(final L list1, final L list2,
+    public <E, L extends List<E>> void swap(final L list1, final L list2,
                                                    final int start, final int end) {
         for (int i = start; i < end; i++) {
             swap(list1, list2, i);
         }
     }
 
-    public static Sol[] Pair(final Sol[] oldPop) {
+    public DSolution[] Pair(final DSolution[] oldPop) {
         return CeiliPair(oldPop);
     }
 
-    public static void Crossover(Sol a, Sol b) {
+    public void Crossover(DSolution a, DSolution b) {
         PMXCrossover(a, b);
     }
 
-    public static Sol[] CeiliPair(final Sol[] oldPop) {
-        ArrayList<Sol> newSolutions = new ArrayList<Sol>();
+    public DSolution[] CeiliPair(final DSolution[] oldPop) {
+        ArrayList<DSolution> newSolutions = new ArrayList<DSolution>();
         for (int i = 0; i < oldPop.length / 2; i++) {
             for (int j = i; j < oldPop.length - i; j++) {
-                Sol newSol1 = new Sol();
-                Sol newSol2 = new Sol();
+                DSolution newSol1 = new DSolution(machinecount,jobcount);
+                DSolution newSol2 = new DSolution(machinecount,jobcount);
                 newSol1.sol = cpy2D(oldPop[i].sol);
                 newSol2.sol = cpy2D(oldPop[j].sol);
                 Crossover(newSol1, newSol2);
@@ -61,11 +57,11 @@ public class Tournament {
                 newSolutions.add(newSol2);
             }
         }
-        return newSolutions.toArray(new Sol[newSolutions.size()]);
+        return newSolutions.toArray(new DSolution[newSolutions.size()]);
     }
 
-    public static void Churn(int[][][] population, Problem problem, int runs) {
-        Sol[] main = new Sol[population.length];
+    public void Churn(int[][][] population, Problem problem, int runs) {
+        DSolution[] main = new DSolution[population.length];
         for (int i = 0; i < population.length; i++) {
             main[i].age = 0;
             main[i].sol = population[i];
@@ -73,13 +69,13 @@ public class Tournament {
         }
 
         Arrays.sort(main);
-        //Sol[] newPairs = Pair(main);
+        //DSolution[] newPairs = Pair(main);
 
         //pair everybody
     }
 
     //Thanks to https://github.com/jfinkels/jmona
-    public static void PMXCrossover(Sol s1, Sol s2) {
+    public void PMXCrossover(DSolution s1, DSolution s2) {
         for (int machine = 0; machine < s1.sol.length; machine++) {
             //omg there goes my perf
             List<Integer> tour1 = IntArrToList(s1.sol[machine]);
@@ -115,8 +111,7 @@ public class Tournament {
                 // if that city is repeated in the crossed over section
                 if (swappedSectionInTour1.contains(currentCity)) {
 
-                    // get the index of the city to replace the repeated city (within the
-                    // swapped section)
+                    // get the index of the city to replace the repeated city (within the swapped section)
                     replacementCityIndex = swappedSectionInTour1.indexOf(currentCity);
 
                     // get the city that is intended to replace the repeated city
