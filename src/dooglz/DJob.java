@@ -17,7 +17,7 @@ public class DJob implements Comparator<DJob>, Comparable<DJob>{
         this.id = id;
         this.pjob = pjob;
         ops = new DOperation[opcount];
-        this.totalProcessingTime = 0;
+
         //steal pops
         ArrayList<modelP.Operation> ao = new ArrayList<modelP.Operation>();
         try {
@@ -29,9 +29,13 @@ public class DJob implements Comparator<DJob>, Comparable<DJob>{
         }
         this.pops = ao.toArray(new modelP.Operation[opcount]);
 
+        int ods =0;
         for (int i = 0; i < opcount; i++) {
             ops[i] = new DOperation(macs, this, this.pops[i]);
+            ods += ops[i].duration;
         }
+
+        this.totalProcessingTime = ods;
     }
 
     @Override

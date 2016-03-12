@@ -10,9 +10,10 @@ public class Main {
         System.out.println("Hello World!");
         modelP.Problem mpp = JSSP.getProblem(100);
 
-/*
+
         DProblem problem = new DProblem(mpp);
         SolutionGenerator sg = new SolutionGenerator(problem.machineCount,problem.jobCount);
+        Tournament tournament = new Tournament(problem.machineCount,problem.jobCount);
         population = new DSolution[MAIN_POP_SIZE];
 
         for (int i = 0; i < MAIN_POP_SIZE / 2; i++) {
@@ -21,12 +22,7 @@ public class Main {
         for (int i = 0; i < MAIN_POP_SIZE / 2; i++) {
             population[i] = new DSolution(JSSP.getRandomSolution(mpp), problem.machineCount, problem.jobCount);
         }
-*/
-        int[][] solution = JSSP.getRandomSolution(mpp);
-
-        int fitness = JSSP.getFitness(solution, mpp);
-        System.out.println("Fitness = " + fitness);
-        System.out.println(mpp);
-        JSSP.printSolution(solution, mpp);
+        tournament.Churn(population,problem,10);
+        int a = 6;
     }
 }

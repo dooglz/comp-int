@@ -60,13 +60,15 @@ public class Tournament {
         return newSolutions.toArray(new DSolution[newSolutions.size()]);
     }
 
-    public void Churn(int[][][] population, Problem problem, int runs) {
+    public void Churn(DSolution[] population, DProblem problem, int runs) {
         DSolution[] main = new DSolution[population.length];
+        /*
         for (int i = 0; i < population.length; i++) {
-            main[i].age = 0;
-            main[i].sol = population[i];
+            main[i].age = population[i].sol;
+            main[i].sol = population[i].sol;
             main[i].score = JSSP.getFitness(main[i].sol, problem);
         }
+        */
 
         Arrays.sort(main);
         //DSolution[] newPairs = Pair(main);

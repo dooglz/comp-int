@@ -29,10 +29,11 @@ public class SolutionGenerator {
 
         //copy array of jobs
         ArrayList<DJob> sortedjobs = new  ArrayList<DJob>(Arrays.asList(p.jobs));
-        System.arraycopy(p.jobs, 0, sortedjobs, 1, this.jobcount);
+        //System.arraycopy(p.jobs, 0, sortedjobs, 1, this.jobcount);
 
         //sort descending by total processing time
         Collections.sort(sortedjobs);
+        Collections.reverse(sortedjobs);
 
         //foreach job
         for (int i = 0; i < sortedjobs.size(); i++) {
