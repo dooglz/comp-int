@@ -10,5 +10,8 @@
     <orderEntry type="library" name="java_websocket" level="project" />
     <orderEntry type="library" name="gson-2.5" level="project" />
     <orderEntry type="library" name="JSSP2" level="project" />
+    <orderEntry type="library" name="JSSP2" level="project" />
+    <orderEntry type="library" name="gson-2.5" level="project" />
+    <orderEntry type="library" name="java_websocket" level="project" />
   </component>
 </module>
