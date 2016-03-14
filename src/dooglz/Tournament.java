@@ -16,13 +16,14 @@ import static dooglz.util.*;
 public class Tournament {
     public static int machinecount;
     public static int jobcount;
-    public Tournament(int machinecount, int jobcount){
-    this.machinecount = machinecount;
+
+    public Tournament(int machinecount, int jobcount) {
+        this.machinecount = machinecount;
         this.jobcount = jobcount;
     }
 
     public <E, L extends List<E>> void swap(final L list1, final L list2,
-                                                   final int index) {
+                                            final int index) {
         final E temp = list1.get(index);
         list1.set(index, list2.get(index));
         list2.set(index, temp);
@@ -30,14 +31,15 @@ public class Tournament {
     }
 
     public <E, L extends List<E>> void swap(final L list1, final L list2,
-                                                   final int start, final int end) {
+                                            final int start, final int end) {
         for (int i = start; i < end; i++) {
             swap(list1, list2, i);
         }
     }
 
     public DSolution[] Pair(final DSolution[] oldPop) {
-        return CeiliPair(oldPop);
+       // return CeiliPair(oldPop);
+        return NeighbourPair(oldPop);
     }
 
     public void Crossover(DSolution a, DSolution b) {
@@ -47,33 +49,104 @@ public class Tournament {
     public DSolution[] CeiliPair(final DSolution[] oldPop) {
         ArrayList<DSolution> newSolutions = new ArrayList<DSolution>();
         for (int i = 0; i < oldPop.length / 2; i++) {
+          //  System.out.print("Pairing ");
             for (int j = i; j < oldPop.length - i; j++) {
-                DSolution newSol1 = new DSolution(machinecount,jobcount);
-                DSolution newSol2 = new DSolution(machinecount,jobcount);
+             //   System.out.print(" " + i + "&" + j);
+                DSolution newSol1 = new DSolution(machinecount, jobcount);
+                DSolution newSol2 = new DSolution(machinecount, jobcount);
                 newSol1.sol = cpy2D(oldPop[i].sol);
                 newSol2.sol = cpy2D(oldPop[j].sol);
+                newSol1.age = Math.max(oldPop[i].age, oldPop[j].age);
+                newSol2.age = newSol1.age;
                 Crossover(newSol1, newSol2);
                 newSolutions.add(newSol1);
                 newSolutions.add(newSol2);
             }
+         //   System.out.println();
         }
         return newSolutions.toArray(new DSolution[newSolutions.size()]);
     }
 
+    public DSolution[] NeighbourPair(final DSolution[] oldPop) {
+        ArrayList<DSolution> newSolutions = new ArrayList<DSolution>();
+        for (int i = 0; i < oldPop.length-1; i++) {
+                //   System.out.print(" " + i + "&" + j);
+                DSolution newSol1 = new DSolution(machinecount, jobcount);
+                DSolution newSol2 = new DSolution(machinecount, jobcount);
+                newSol1.sol = cpy2D(oldPop[i].sol);
+                newSol2.sol = cpy2D(oldPop[i+1].sol);
+                newSol1.age = Math.max(oldPop[i].age, oldPop[i+1].age);
+                newSol2.age = newSol1.age;
+                Crossover(newSol1, newSol2);
+                newSolutions.add(newSol1);
+                newSolutions.add(newSol2);
+            }
+            //   System.out.println();
+        return newSolutions.toArray(new DSolution[newSolutions.size()]);
+    }
+
+
     public void Churn(DSolution[] population, DProblem problem, int runs) {
-        DSolution[] main = new DSolution[population.length];
-        /*
-        for (int i = 0; i < population.length; i++) {
-            main[i].age = population[i].sol;
-            main[i].sol = population[i].sol;
-            main[i].score = JSSP.getFitness(main[i].sol, problem);
+        int prevavg = 0;
+        int prevavg10 = 0;
+        int improvement = 0;
+        int divergence = 0;
+        int popIncrease =0;
+        for (int i = 0; i < runs; i++) {
+            Arrays.sort(population);
+            DSolution[] newChilderen = Pair(population);
+            DSolution[] newPop = new DSolution[newChilderen.length + population.length];
+            System.arraycopy(population, 0, newPop, 0, population.length);
+            System.arraycopy(newChilderen, 0, newPop, population.length, newChilderen.length);
+            Arrays.sort(newPop);
+            //slice and set
+            if(popIncrease > 0) {
+                int newRandoms = Math.max((popIncrease + population.length) - newPop.length, 0);
+                if(newRandoms > 0){
+                    population = new DSolution[population.length+popIncrease];
+                    System.arraycopy(newPop, 0, population, 0, newPop.length);
+                    for (int j = 0; j < newRandoms; j++) {
+                        population[ newPop.length+j] = new DSolution(JSSP.getRandomSolution(problem.pProblem), problem.machineCount, problem.jobCount);
+                    }
+                }else{
+                    population = Arrays.copyOf(newPop, population.length+popIncrease);
+                }
+
+            }else {
+                population = Arrays.copyOf(newPop, population.length);
+            }
+            int avg = 0, avg50 = 0, avg25 = 0, avg10 = 0;
+            for (int j = 0; j < population.length; j++) {
+                if (j < Math.floor(population.length * 0.1)) {
+                    avg10 += population[j].Score();
+                }
+                if (j <  Math.floor(population.length * 0.25)) {
+                    avg25 += population[j].Score();
+                }
+                if (j <  Math.floor(population.length * 0.5)) {
+                    avg50 += population[j].Score();
+                }
+                avg += population[j].Score();
+            }
+            avg /= population.length;
+            avg50 /= (population.length * 0.5);
+            avg25 /= (population.length * 0.25);
+            avg10 /= (population.length * 0.1);
+            System.out.println("Run: " + i + " Top:" + population[0].Score() + " avg10:" + avg10 + " avg25:" + avg25 + " avg50:" + avg50 + " avg:" + avg);
+
+            improvement = avg10 - prevavg10;
+            divergence = avg - prevavg;
+            prevavg10 = avg10;
+            prevavg = avg;
+            if(divergence < 100){
+                popIncrease += 2;
+            }else if(divergence > 200){
+                popIncrease = Math.max(popIncrease-2, 0);
+            }
+            popIncrease = Math.min(16, popIncrease);
+            System.out.println("improvement: " + improvement + " divergence:" + divergence + " popIncrease:" + popIncrease);
         }
-        */
-
-        Arrays.sort(main);
-        //DSolution[] newPairs = Pair(main);
-
-        //pair everybody
+        int gg =0;
     }
 
     //Thanks to https://github.com/jfinkels/jmona
@@ -87,7 +160,10 @@ public class Tournament {
             // choose two random numbers for the start and end indices of the slice
             // (one can be at index "size")
             final int number1 = (int) (Math.floor(Math.random() * ((float) size)));
-            final int number2 = (int) (Math.floor(Math.random() * ((float) (size - 1))));
+            int number2;
+            do {
+                number2 = (int) (Math.floor(Math.random() * ((float) (size - 1))));
+            } while (Math.abs(number2 - number1) < 2);
 
             // make the smaller the start and the larger the end
             final int start = Math.min(number1, number2);
@@ -106,7 +182,7 @@ public class Tournament {
 
             // iterate over each city in not in the crossed over section
             for (int i = end % size; i >= end || i < start; i = (i + 1) % size) {
-
+                //  System.out.println(i);
                 // get the current city being examined in tour 1
                 currentCity = tour1.get(i);
 

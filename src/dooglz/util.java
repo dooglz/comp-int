@@ -26,7 +26,7 @@ public class util {
         int[][] current = new int[old.length][old[0].length];
         for (int i = 0; i < old.length; i++)
             for (int j = 0; j < old[i].length; j++)
-                old[i][j] = current[i][j];
+                current[i][j] = old[i][j];
         return current;
     }
 }

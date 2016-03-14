@@ -64,6 +64,9 @@ public class SolutionGenerator {
             }
         }
 
+       // JSSP.
+        solutionArray.age =0;
+        solutionArray.Score();
         return solutionArray;
     }
 }
