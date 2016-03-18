@@ -132,19 +132,21 @@ public class Tournament {
             avg50 /= (population.length * 0.5);
             avg25 /= (population.length * 0.25);
             avg10 /= (population.length * 0.1);
-            System.out.println("Run: " + i + " Top:" + population[0].Score() + " avg10:" + avg10 + " avg25:" + avg25 + " avg50:" + avg50 + " avg:" + avg);
+
 
             improvement = avg10 - prevavg10;
             divergence = avg - prevavg;
             prevavg10 = avg10;
             prevavg = avg;
-            if(divergence < 100){
-                popIncrease += 2;
-            }else if(divergence > 200){
-                popIncrease = Math.max(popIncrease-2, 0);
+            if(divergence < 200){
+                popIncrease += 8;
+            }else if(divergence > 400){
+                popIncrease = Math.max(popIncrease-4, 0);
             }
-            popIncrease = Math.min(16, popIncrease);
-            System.out.println("improvement: " + improvement + " divergence:" + divergence + " popIncrease:" + popIncrease);
+            popIncrease = Math.min(1024, popIncrease);
+            System.out.print("Run: " + i + " Top:" + population[0].Score() + " avg10:" + avg10 + " avg25:" + avg25 + " avg50:" + avg50 + " avg:" + avg);
+            System.out.print("improvement: " + improvement + " divergence:" + divergence + " popIncrease:" + popIncrease);
+            System.out.println();
         }
         int gg =0;
     }
