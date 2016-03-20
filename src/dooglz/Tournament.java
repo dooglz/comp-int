@@ -41,8 +41,9 @@ public class Tournament {
 
     public void Crossover(DSolution a, DSolution b) {
         //PMXCrossover(a, b);
-        SPCrossover(a, b);
+       // SPCrossover(a, b);
        // MPCrossover(a,b);
+        RenQingCrossover(a,b);
     }
 
     public DSolution[] CeiliPair(final DSolution[] oldPop) {
@@ -73,7 +74,7 @@ public class Tournament {
             newSolutions.add(oldPop[oldPop.length - 1 - i]);
         }
         for (int i = offset; i < oldPop.length - 1; i += 2) {
-            if (Math.random() < 0.2) {
+            if (Math.random() < 0.5) {
                 newSolutions.add(oldPop[i]);
                 newSolutions.add(oldPop[i + 1]);
             } else {
@@ -176,8 +177,8 @@ public class Tournament {
             System.arraycopy(population, 0, newChilderen, 0, newChilderen.length);
             //System.out.println();
             Arrays.sort(population);
-            for (int j = 0; j < population.length - 1; j++) {
-                double chance = ((double) j / (double) population.length) + 0.1;
+            for (int j = 1; j < population.length - 1; j++) {
+                double chance = ((double) j / (double) population.length) + 0.2;
                 if (Math.random() < chance) {
                //     mutateMe(population[j]);
                 }
@@ -233,6 +234,22 @@ public class Tournament {
             }
         }
         int gg = 0;
+    }
+
+    public void RenQingCrossover(DSolution s1, DSolution s2) {
+
+        //pick a random set of machines
+       // final int mc = (int) Math.floor(Math.random() * ((double) s1.sol.length));
+        int mc = 1;
+        List<Integer> mcs = IntStream.rangeClosed(0, s1.sol.length-1).boxed().collect(Collectors.toList());
+        Collections.shuffle(mcs);
+        mcs = mcs.subList(0,mc);
+        for (Integer i : mcs) {
+            int[] tmp = s1.sol[i];
+            s1.sol[i] = s2.sol[i];
+            s2.sol[i] = tmp;
+        }
+
     }
 
     public void SPCrossover(DSolution s1, DSolution s2) {

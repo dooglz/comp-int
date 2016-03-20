@@ -77,4 +77,13 @@ public class DSolution implements Comparator<DSolution>, Comparable<DSolution> {
             this.sol[m][holes.get(i)] = missingFrom.get(i);
         }
     }
+
+    public void MakeFeasible(){
+     //for each machine
+        //schedule up the next job
+        //Can it be scheduled yet?
+            //yes - schedule
+            //no - get next one then come back to this
+        
+    }
 }
