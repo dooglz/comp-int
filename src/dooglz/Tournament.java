@@ -39,7 +39,8 @@ public class Tournament {
 
     public DSolution[] Pair(final DSolution[] oldPop) {
        // return CeiliPair(oldPop);
-        return NeighbourPair(oldPop);
+        //return NeighbourPair(oldPop);
+        return RandPair(oldPop);
     }
 
     public void Crossover(DSolution a, DSolution b) {
@@ -85,6 +86,46 @@ public class Tournament {
         return newSolutions.toArray(new DSolution[newSolutions.size()]);
     }
 
+    public DSolution[] RandPair(final DSolution[] oldPop) {
+        ArrayList<DSolution> newSolutions = new ArrayList<DSolution>();
+        for (int i = 0; i < oldPop.length-1; i++) {
+            //   System.out.print(" " + i + "&" + j);
+            DSolution newSol1 = new DSolution(machinecount, jobcount);
+            DSolution newSol2 = new DSolution(machinecount, jobcount);
+            int a = (int)Math.floor(Math.random() * (double)(oldPop.length));
+            int b =a;
+            while(b == a){
+               b = (int)Math.floor(Math.random() * (double)(oldPop.length));
+            }
+            newSol1.sol = cpy2D(oldPop[a].sol);
+            newSol2.sol = cpy2D(oldPop[b].sol);
+            newSol1.age = Math.max(oldPop[a].age, oldPop[b].age);
+            newSol2.age = newSol1.age;
+            Crossover(newSol1, newSol2);
+            newSolutions.add(newSol1);
+            newSolutions.add(newSol2);
+        }
+        //   System.out.println();
+        return newSolutions.toArray(new DSolution[newSolutions.size()]);
+    }
+    public void RemoveDupes(DSolution[] p){
+        for (int i = 0; i <p.length-1; i++) {
+            outer:
+            for (int j = i+1; j < p.length-1; j++) {
+                for (int k = 0; k < p[i].sol.length-1; k++) {
+                    for (int l = 0; l <p[i].sol[k].length-1; l++) {
+                        if(p[i].sol[k][l] != p[j].sol[k][l]){
+                            continue outer;
+                        }
+                    }
+
+                }
+                //must be equal
+                System.out.println(i+ " is dupe!");
+                p[i]  = new DSolution(JSSP.getRandomSolution(Main.problem.pProblem), Main.problem.machineCount, Main.problem.jobCount);
+            }
+        }
+    }
 
     public void Churn(DSolution[] population, DProblem problem, int runs) {
         int prevavg = 0;
@@ -95,26 +136,19 @@ public class Tournament {
         for (int i = 0; i < runs; i++) {
             Arrays.sort(population);
             DSolution[] newChilderen = Pair(population);
-            DSolution[] newPop = new DSolution[newChilderen.length + population.length];
+            DSolution[] newPop = new DSolution[newChilderen.length + population.length+popIncrease];
             System.arraycopy(population, 0, newPop, 0, population.length);
             System.arraycopy(newChilderen, 0, newPop, population.length, newChilderen.length);
-            Arrays.sort(newPop);
-            //slice and set
-            if(popIncrease > 0) {
-                int newRandoms = Math.max((popIncrease + population.length) - newPop.length, 0);
-                if(newRandoms > 0){
-                    population = new DSolution[population.length+popIncrease];
-                    System.arraycopy(newPop, 0, population, 0, newPop.length);
-                    for (int j = 0; j < newRandoms; j++) {
-                        population[ newPop.length+j] = new DSolution(JSSP.getRandomSolution(problem.pProblem), problem.machineCount, problem.jobCount);
-                    }
-                }else{
-                    population = Arrays.copyOf(newPop, population.length+popIncrease);
-                }
-
-            }else {
-                population = Arrays.copyOf(newPop, population.length);
+            for (int j = population.length+ newChilderen.length; j < population.length+ newChilderen.length+popIncrease; j++) {
+                newPop[j] = new DSolution(JSSP.getRandomSolution(Main.problem.pProblem), Main.problem.machineCount, Main.problem.jobCount);
             }
+            Arrays.sort(newPop);
+            population = Arrays.copyOf(newPop, population.length+popIncrease);
+            //replace bottm 10% with random
+
+
+            RemoveDupes(population);
+
             int avg = 0, avg50 = 0, avg25 = 0, avg10 = 0;
             for (int j = 0; j < population.length; j++) {
                 if (j < Math.floor(population.length * 0.1)) {
@@ -145,7 +179,7 @@ public class Tournament {
             }
             popIncrease = Math.min(1024, popIncrease);
             System.out.print("Run: " + i + " Top:" + population[0].Score() + " avg10:" + avg10 + " avg25:" + avg25 + " avg50:" + avg50 + " avg:" + avg);
-            System.out.print("improvement: " + improvement + " divergence:" + divergence + " popIncrease:" + popIncrease);
+            System.out.print("improvement: " + improvement + " divergence:" + divergence + " popIncrease:" + popIncrease + " " +population.length );
             System.out.println();
         }
         int gg =0;
