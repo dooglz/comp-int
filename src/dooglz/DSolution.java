@@ -78,12 +78,94 @@ public class DSolution implements Comparator<DSolution>, Comparable<DSolution> {
         }
     }
 
-    public void MakeFeasible(){
-     //for each machine
-        //schedule up the next job
-        //Can it be scheduled yet?
-            //yes - schedule
-            //no - get next one then come back to this
-        
+    public void MakeFeasible() {
+
+        int[][] solcpy = new int[this.sol.length][this.sol[0].length];
+        int[][] schedule = new int[solcpy.length][solcpy[0].length];
+        for (int i = 0; i < this.sol.length; i++) {
+            for (int j = 0; j < this.sol[0].length; j++) {
+                solcpy[i][j] = this.sol[i][j];
+                schedule[i][j] = -1;
+            }
+        }
+
+
+        //for each 'tick;
+        for (int i = 0; i < solcpy[0].length; i++) {
+
+            List<Integer> nothappy = IntStream.rangeClosed(0, solcpy.length - 1).boxed().collect(Collectors.toList());
+            int prev = 0;
+            int searchahead = 0;
+            while (nothappy.size() > 0) {
+                boolean canLookahead = false;
+                boolean failthrough = false;
+                if (prev == nothappy.size()) {
+                    canLookahead = true;
+                    searchahead++;
+                    if (searchahead + i >= solcpy[0].length) {
+                        failthrough = true;
+                    }
+                } else {
+                    searchahead = 0;
+                }
+                prev = nothappy.size();
+
+                for (int m = 0; m < solcpy.length; m++) {
+                    //just incase we've already scheduled this
+                    if (schedule[m][i] != -1) {
+                        continue;
+                    }
+                    //what does our solution say?
+                    int job = solcpy[m][i];
+
+                    if (failthrough) {
+                        //oh dear
+                        schedule[m][i] = job;
+                        nothappy.remove(Integer.valueOf(m));
+                        canLookahead = false;
+                        continue;
+                    } else if (canLookahead) {
+                        job = solcpy[m][i + searchahead];
+                    }
+                    //what operation is that
+                    final int op = Main.problem.jobs[job].GetOperationOnMachine(Main.problem.machines[m]).id;
+                    boolean happy = false;
+                    if (op == 0 || i == solcpy[0].length - 1) { //TODO check that range
+                        happy = true;
+                    } else {
+                        //has the op before this been scheduled, in this batch?
+                        final int machineForPreviousOP = Main.problem.jobs[job].ops[op - 1].machine.id;
+                        if (solcpy[machineForPreviousOP][i] == job) {
+                            happy = true;
+                        } else {
+                            //in a previous batch?
+                            for (int j = 0; j < i; j++) {
+                                if (schedule[machineForPreviousOP][j] == job) {
+                                    happy = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (happy) {
+                        schedule[m][i] = job;
+                        nothappy.remove(Integer.valueOf(m));
+                        canLookahead = false;
+                        if (searchahead > 0) {
+                            solcpy[m][i + searchahead] = -1;
+                            System.arraycopy(solcpy[m], i, solcpy[m], i + 1, searchahead);
+                        }
+                        solcpy[m][i] = -1;
+                    }
+
+                }
+            }
+        }
+        for (int i = 0; i < this.sol.length; i++) {
+            for (int j = 0; j < this.sol[0].length; j++) {
+                this.sol[i][j] = schedule[i][j];
+            }
+        }
+
     }
 }

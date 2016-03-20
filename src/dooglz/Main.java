@@ -15,7 +15,13 @@ public class Main {
         SolutionGenerator sg = new SolutionGenerator(problem.machineCount,problem.jobCount);
         Tournament tournament = new Tournament(problem.machineCount,problem.jobCount);
         population = new DSolution[MAIN_POP_SIZE];
+
+        DSolution t = new DSolution(JSSP.getRandomSolution(mpp), problem.machineCount, problem.jobCount);
+        System.out.println(t.Score(true));
+        t.MakeFeasible();
+        System.out.println(t.Score(true));
     /*
+
         for (int i = 0; i < MAIN_POP_SIZE / 2; i++) {
             if(i < 20){
                 population[i] = sg.RndGenByOpId(problem, ((float)i) / 20.0f);
