@@ -42,6 +42,7 @@ public class Tournament {
     public void Crossover(DSolution a, DSolution b) {
         //PMXCrossover(a, b);
         SPCrossover(a, b);
+       // MPCrossover(a,b);
     }
 
     public DSolution[] CeiliPair(final DSolution[] oldPop) {
@@ -72,7 +73,7 @@ public class Tournament {
             newSolutions.add(oldPop[oldPop.length - 1 - i]);
         }
         for (int i = offset; i < oldPop.length - 1; i += 2) {
-            if (Math.random() < 0.7) {
+            if (Math.random() < 0.2) {
                 newSolutions.add(oldPop[i]);
                 newSolutions.add(oldPop[i + 1]);
             } else {
@@ -175,12 +176,20 @@ public class Tournament {
             System.arraycopy(population, 0, newChilderen, 0, newChilderen.length);
             //System.out.println();
             Arrays.sort(population);
-            for (int j = 1; j < population.length - 1; j++) {
+            for (int j = 0; j < population.length - 1; j++) {
                 double chance = ((double) j / (double) population.length) + 0.1;
                 if (Math.random() < chance) {
-                    mutateMe(population[j]);
+               //     mutateMe(population[j]);
                 }
             }
+            for (int j = population.length - 10; j < population.length - 1; j++) {
+                DSolution d = new DSolution(JSSP.getRandomSolution(Main.problem.pProblem), Main.problem.machineCount, Main.problem.jobCount);
+                if(d.Score(true) >=population[j].Score(false) ){
+                    population[j] = d;
+                    //System.out.println("boop");
+                }
+            }
+
             RemoveDupes(population);
             Arrays.sort(population);
 
@@ -238,55 +247,31 @@ public class Tournament {
             s2.sol[m][i] = tmp;
         }
         //now we must fix
-        List<Integer> sa1 = IntStream.of(s1.sol[m]).boxed().collect(Collectors.toList());
-        List<Integer> sa2 = IntStream.of(s2.sol[m]).boxed().collect(Collectors.toList());
-        ArrayList<Integer> missingFrom1 = new ArrayList<>();
-        ArrayList<Integer> missingFrom2 = new ArrayList<>();
-        ArrayList<Integer> holes1 = new ArrayList<>();
-        ArrayList<Integer> holes2 = new ArrayList<>();
+        s1.FixPermutation(m);
+        s2.FixPermutation(m);
+    }
 
-        for (int i = 0; i < s1.sol[m].length; i++) {
-            missingFrom1.add(i);
-            missingFrom2.add(i);
+    public void MPCrossover(DSolution s1, DSolution s2) {
+        // pick a random machine
+        int m = (int) Math.floor(Math.random() * ((double) s1.sol.length));
+        //pick a cxoS point
+        int cxo1 = (int) Math.floor(Math.random() * ((double) s1.sol[m].length - 1));
+        int cxo2 = cxo1;
+        while(cxo1 != cxo2){
+            cxo2 = (int) Math.floor(Math.random() * ((double) s1.sol[m].length - 1));
         }
-        for (int i = 0; i < s1.sol[m].length; i++) {
-            Integer i1 = s1.sol[m][i];
-            Integer i2 = s2.sol[m][i];
-            if (Collections.frequency(sa1, i1) > 1) {
-                holes1.add(i);
-                sa1.set(i, -1);
-            }
-            if (Collections.frequency(sa2, i2) > 1) {
-                holes2.add(i);
-                sa2.set(i, -1);
-            }
-            missingFrom1.remove(i1);
-            missingFrom2.remove(i2);
+        int cxop = Math.min(cxo1,cxo2);
+        int cxopE = Math.max(cxo1,cxo2);
+
+        //swap elememts
+        for (int i = cxop; i < cxopE; i++) {
+            int tmp = s1.sol[m][i];
+            s1.sol[m][i] = s2.sol[m][i];
+            s2.sol[m][i] = tmp;
         }
-
-        //Collections.sort(missingFrom1);
-        //Collections.sort(missingFrom2);
-
-        //replace missing jobs back on the list, the job with the
-        //lowest operation ID on this machine gets priority
-
-        Collections.sort(missingFrom1, (left, right) -> {
-            int op1 = Main.problem.jobs[left].GetOperationOnMachine(Main.problem.machines[m]).id;
-            int op2 = Main.problem.jobs[right].GetOperationOnMachine(Main.problem.machines[m]).id;
-            return op1 - op2;
-        });
-        Collections.sort(missingFrom2, (left, right) -> {
-            int op1 = Main.problem.jobs[left].GetOperationOnMachine(Main.problem.machines[m]).id;
-            int op2 = Main.problem.jobs[right].GetOperationOnMachine(Main.problem.machines[m]).id;
-            return op1 - op2;
-        });
-
-        for (int i = 0; i < missingFrom1.size(); i++) {
-            s1.sol[m][holes1.get(i)] = missingFrom1.get(i);
-        }
-        for (int i = 0; i < missingFrom2.size(); i++) {
-            s2.sol[m][holes2.get(i)] = missingFrom2.get(i);
-        }
+        //now we must fix
+        s1.FixPermutation(m);
+        s2.FixPermutation(m);
     }
 
     //Thanks to https://github.com/jfinkels/jmona

@@ -18,7 +18,28 @@ public class SolutionGenerator {
         this.jobcount = jobcount;
     }
 
-    public DSolution RndGenWeight(DProblem p, float randomness, int rotate) {
+    public DSolution RndGenByOpId(DProblem p, float randomness) {
+        DSolution newSol = new DSolution(machinecount,jobcount);
+        for (int m = 0; m < machinecount; m++) {
+            ArrayList<Integer> jobs = new ArrayList<>();
+            for (int j = 0; j < jobcount; j++) {
+                jobs.add(j);
+            }
+            final int mm =m;
+            Collections.sort(jobs, (left, right) -> {
+                int op1 = Main.problem.jobs[left].GetOperationOnMachine(Main.problem.machines[mm]).id;
+                int op2 = Main.problem.jobs[right].GetOperationOnMachine(Main.problem.machines[mm]).id;
+                return op1 - op2;
+            });
+            Collections.rotate(jobs,(int)Math.floor((-5.0 * randomness * Math.random())));
+            for (int j = 0; j < jobcount; j++) {
+                newSol.sol[m][j] = jobs.get(j);
+            }
+        }
+        return newSol;
+    }
+
+    public DSolution RndGenByTime(DProblem p, float randomness, int rotate) {
         DSolution solutionArray = new DSolution(machinecount,jobcount);
 
         for (int i = 0; i < machinecount; i++) {
@@ -30,7 +51,6 @@ public class SolutionGenerator {
         //copy array of jobs
         ArrayList<DJob> sortedjobs = new ArrayList<DJob>(Arrays.asList(p.sortedjobs));
         Collections.rotate(sortedjobs, rotate);
-
         //foreach job
         for (int i = 0; i < sortedjobs.size(); i++) {
             DJob j = sortedjobs.get(i);
@@ -59,7 +79,6 @@ public class SolutionGenerator {
                 solutionArray.sol[mid][j2] = a;
             }
         }
-
        // JSSP.
         solutionArray.age =0;
         solutionArray.Score(true);
