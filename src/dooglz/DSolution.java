@@ -20,10 +20,10 @@ public class DSolution implements Comparator<DSolution> ,Comparable<DSolution> {
     }
     @Override
     public int compare(DSolution a, DSolution b) {
-        return  b.Score() - a.Score();
+        return  b.Score(false) - a.Score(false);
     }
-    public int Score(){
-        if (this.score_ != -1){
+    public int Score(boolean recalc){
+        if (this.score_ != -1 && !recalc){
             return this.score_;
         }else{
             this.score_ =  JSSP.getFitness(this.sol,Main.problem.pProblem);
@@ -34,6 +34,6 @@ public class DSolution implements Comparator<DSolution> ,Comparable<DSolution> {
     @Override
     public int compareTo(DSolution o) {
        // return this.Score() - o.Score();
-        return Integer.compare( o.Score(),this.Score());
+        return Integer.compare( o.Score(false),this.Score(false));
     }
 }

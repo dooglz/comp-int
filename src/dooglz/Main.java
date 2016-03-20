@@ -15,18 +15,19 @@ public class Main {
         SolutionGenerator sg = new SolutionGenerator(problem.machineCount,problem.jobCount);
         Tournament tournament = new Tournament(problem.machineCount,problem.jobCount);
         population = new DSolution[MAIN_POP_SIZE];
-/*
+
         for (int i = 0; i < MAIN_POP_SIZE / 2; i++) {
-            population[i] = sg.RndGenWeight(problem, i / (float) (MAIN_POP_SIZE / 2));
+            population[i] = sg.RndGenWeight(problem, i / (float) (MAIN_POP_SIZE / 2), i);
         }
         for (int i = MAIN_POP_SIZE / 2; i < MAIN_POP_SIZE; i++) {
             population[i] = new DSolution(JSSP.getRandomSolution(mpp), problem.machineCount, problem.jobCount);
         }
-        */
+
+        /*
         for (int i = 0 ; i < MAIN_POP_SIZE; i++) {
             population[i] = new DSolution(JSSP.getRandomSolution(mpp), problem.machineCount, problem.jobCount);
-        }
-        tournament.Churn(population,problem,512);
+        }*/
+        tournament.Churn(population,problem,10512);
         int a = 6;
     }
 }

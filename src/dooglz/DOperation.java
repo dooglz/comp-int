@@ -8,15 +8,16 @@ import java.util.ArrayList;
 
 public class DOperation {
     final DMachine machine;
-    final DJob job; //todo
+    final DJob job;
     final modelP.Operation pop;
     final int duration;
+    final int id;
 
-    public DOperation(DMachine[] machines, DJob job, modelP.Operation op) throws IllegalStateException{
+    public DOperation(DMachine[] machines, DJob job, modelP.Operation op, int id) throws IllegalStateException{
 
         this.job = job;
         this.pop = op;
-
+        this.id = id;
         int dur = -1;
         try {
             Field f = modelP.Operation.class.getDeclaredField("duration");
@@ -35,8 +36,8 @@ public class DOperation {
 
             f = modelP.Machine.class.getDeclaredField("id");
             f.setAccessible(true);
-            int id = (int) f.get(m);
-            mac = id;
+            int mid = (int) f.get(m);
+            mac = mid;
         } catch (Exception e) {
             throw new IllegalStateException();
         }
