@@ -19,7 +19,7 @@ public class DProblem {
     final public DJob[] sortedjobs;
     final public int jobCount;
     final public int machineCount;
-
+    final public int lb;
 
     public DProblem(modelP.Problem p)  throws IllegalStateException{
         this.pProblem = p;
@@ -45,6 +45,7 @@ public class DProblem {
             throw new IllegalStateException();
         }
         pjobs = unconst_jobs;
+        this.lb = p.getLowerBound();
         //turn pjobs into DJobs
         for (int jobid = 0; jobid < jobCount; ++jobid) {
             this.jobs[jobid] = new DJob(pjobs[jobid],machineCount, this.machines,jobid);

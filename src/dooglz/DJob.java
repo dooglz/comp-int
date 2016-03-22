@@ -40,13 +40,13 @@ public class DJob implements Comparator<DJob>, Comparable<DJob> {
 
     @Override
     public int compare(DJob j1, DJob j2) {
-        return j1.totalProcessingTime - j2.totalProcessingTime;
+        return j2.totalProcessingTime - j1.totalProcessingTime;
     }
 
     @Override
     public int compareTo(DJob o) {
         //ascending order
-        return this.totalProcessingTime - o.totalProcessingTime;
+        return o.totalProcessingTime - this.totalProcessingTime;
     }
 
     public DOperation GetOperationOnMachine(DMachine m) {

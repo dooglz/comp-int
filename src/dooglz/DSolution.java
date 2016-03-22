@@ -2,10 +2,9 @@ package dooglz;
 
 import modelP.JSSP;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.io.Console;
+import java.security.spec.DSAGenParameterSpec;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -29,7 +28,7 @@ public class DSolution implements Comparator<DSolution>, Comparable<DSolution> {
 
     @Override
     public int compare(DSolution a, DSolution b) {
-        return b.Score(false) - a.Score(false);
+        return a.Score(false) - b.Score(false);
     }
 
     public int Score(boolean recalc) {
@@ -44,7 +43,7 @@ public class DSolution implements Comparator<DSolution>, Comparable<DSolution> {
     @Override
     public int compareTo(DSolution o) {
         // return this.Score() - o.Score();
-        return Integer.compare(o.Score(false), this.Score(false));
+        return Integer.compare(this.Score(false), o.Score(false));
     }
 
     public void FixPermutation(int m) {
@@ -76,6 +75,34 @@ public class DSolution implements Comparator<DSolution>, Comparable<DSolution> {
         for (int i = 0; i < missingFrom.size(); i++) {
             this.sol[m][holes.get(i)] = missingFrom.get(i);
         }
+    }
+
+    static DSolution getRand(boolean optimised, int searchspace){
+        if(searchspace < 1){
+            searchspace = 1;
+        }
+        DSolution ss[] = new DSolution[searchspace];
+        for (int i = 0; i < searchspace; i++) {
+            ss[i] = new DSolution(JSSP.getRandomSolution(Main.problem.pProblem),Main.problem.machineCount, Main.problem.jobCount);
+            if(optimised){ss[i].MakeFeasible();}
+        }
+        Arrays.sort(ss);
+        return ss[0];
+    }
+
+    public boolean IsFeasible(){
+        for (int m = 0; m < this.sol.length; m++) {
+            int lastop = -1;
+            for (int j = 0; j < this.sol[m].length; j++) {
+                final int op = Main.problem.jobs[j].GetOperationOnMachine(Main.problem.machines[m]).id;
+                if (op < lastop){
+                    System.out.println("false");
+                    return false;
+                }
+                lastop = op;
+            }
+        }
+        return true;
     }
 
     public void MakeFeasible() {

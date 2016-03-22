@@ -8,17 +8,18 @@ public class Main {
     public static DProblem problem;
     public static DSolution population[];
     public static void main(String[] args) throws InterruptedException, IOException {
-        System.out.println("Hello World!");
-        modelP.Problem mpp = JSSP.getProblem(100);
-
+        modelP.Problem mpp = JSSP.getProblem(PROBLEM_ID);
         problem = new DProblem(mpp);
         SolutionGenerator sg = new SolutionGenerator(problem.machineCount,problem.jobCount);
         Tournament tournament = new Tournament(problem.machineCount,problem.jobCount);
-        population = new DSolution[MAIN_POP_SIZE];
 
+        population = new DSolution[MAIN_POP_SIZE];
+        System.out.println("Problem "+PROBLEM_ID+" Lb:"+problem.lb+" popsize: "+MAIN_POP_SIZE);
         DSolution t = new DSolution(JSSP.getRandomSolution(mpp), problem.machineCount, problem.jobCount);
         System.out.println(t.Score(true));
+        t.IsFeasible();
         t.MakeFeasible();
+        t.IsFeasible();
         System.out.println(t.Score(true));
     /*
 
@@ -35,7 +36,10 @@ public class Main {
 */
 
         for (int i = 0 ; i < MAIN_POP_SIZE; i++) {
-            population[i] = new DSolution(JSSP.getRandomSolution(mpp), problem.machineCount, problem.jobCount);
+           // population[i] = new DSolution(JSSP.getRandomSolution(mpp), problem.machineCount, problem.jobCount);
+            //population[i].MakeFeasible();
+            if(i%64==0){System.out.println(".");}
+            population[i] = DSolution.getRand(true,400);
         }
         tournament.Churn(population,problem,10512);
         int a = 6;

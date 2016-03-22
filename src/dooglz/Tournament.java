@@ -41,8 +41,8 @@ public class Tournament {
 
     public void Crossover(DSolution a, DSolution b) {
         //PMXCrossover(a, b);
-       // SPCrossover(a, b);
-       // MPCrossover(a,b);
+        //SPCrossover(a, b);
+        //MPCrossover(a,b);
         RenQingCrossover(a,b);
     }
 
@@ -74,7 +74,7 @@ public class Tournament {
             newSolutions.add(oldPop[oldPop.length - 1 - i]);
         }
         for (int i = offset; i < oldPop.length - 1; i += 2) {
-            if (Math.random() < 0.5) {
+            if (Math.random() < 0.9) {
                 newSolutions.add(oldPop[i]);
                 newSolutions.add(oldPop[i + 1]);
             } else {
@@ -134,7 +134,7 @@ public class Tournament {
                 }
                 //must be equal
                 System.out.println(i + " is dupe!");
-                p[i] = new DSolution(JSSP.getRandomSolution(Main.problem.pProblem), Main.problem.machineCount, Main.problem.jobCount);
+                p[i] = DSolution.getRand(true,20);
             }
         }
     }
@@ -170,26 +170,27 @@ public class Tournament {
         int best = 0;
         int popIncrease = 0;
         Arrays.sort(population);
-
+        int bestever = Integer.MAX_VALUE;
         for (int i = 0; i < (i + 1); i++) {
 
             DSolution[] newChilderen = Pair(population, i % 2);
-            System.arraycopy(population, 0, newChilderen, 0, newChilderen.length);
+            System.arraycopy(newChilderen, 0, population, 0, population.length);
             //System.out.println();
             Arrays.sort(population);
             for (int j = 1; j < population.length - 1; j++) {
-                double chance = ((double) j / (double) population.length) + 0.2;
+                double chance = ((double) j / (double) population.length) - 0.1;
                 if (Math.random() < chance) {
-               //     mutateMe(population[j]);
+                    mutateMe(population[j]);
                 }
             }
+            /*
             for (int j = population.length - 10; j < population.length - 1; j++) {
                 DSolution d = new DSolution(JSSP.getRandomSolution(Main.problem.pProblem), Main.problem.machineCount, Main.problem.jobCount);
-                if(d.Score(true) >=population[j].Score(false) ){
+                if(d.Score(true) <= population[j].Score(false) ){
                     population[j] = d;
                     //System.out.println("boop");
                 }
-            }
+            }*/
 
             RemoveDupes(population);
             Arrays.sort(population);
@@ -197,8 +198,12 @@ public class Tournament {
 
             int ob = best;
             best = population[0].Score(false);
-            if (ob != best) {
-
+            bestever = Math.min(bestever,best);
+            if(bestever <= problem.lb){
+                System.out.print("BEST SOLUTION FOUND! Generation: "+i);
+                return;
+            }
+            if (ob != best || i%500 ==0 ) {
                 int avg = 0, avg50 = 0, avg25 = 0, avg10 = 0;
                 for (int j = 0; j < population.length; j++) {
                     if (j < Math.floor(population.length * 0.1)) {
@@ -228,7 +233,7 @@ public class Tournament {
                     popIncrease = Math.max(popIncrease - 4, 0);
                 }
                 popIncrease = Math.min(1024, popIncrease);
-                System.out.print("Run: " + i + " Top:" + best + " avg10:" + avg10 + " avg25:" + avg25 + " avg50:" + avg50 + " avg:" + avg);
+                System.out.print("Run: " + i + " BestEver: "+bestever+" Top:" + best + " avg10:" + avg10 + " avg25:" + avg25 + " avg50:" + avg50 + " avg:" + avg);
                 System.out.print(" improvement: " + improvement + "\tdivergence:" + divergence + "\tpopIncrease:" + popIncrease + " " + population.length);
                 System.out.println();
             }
