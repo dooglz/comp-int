@@ -1,21 +1,27 @@
 package dooglz;
 
-import modelP.JSSP;
-
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static dooglz.Constants.MAIN_POP_SIZE;
 import static dooglz.util.*;
 
 
-public class Tournament {
+public class GeneticAlgorithm {
+    public static int seedRange = 32;
+    public static int tournamentSampleSize = 128;
+    public static int tournamentNewChilderenCount = 10;
+    public static int tournamentMutateRange = 128;
+    public static int resetTrigger = 200;
+    public static int goal = 55;
     private static int machinecount;
     private static int jobcount;
 
-    public Tournament(int machinecount, int jobcount) {
-        Tournament.machinecount = machinecount;
-        Tournament.jobcount = jobcount;
+
+    public GeneticAlgorithm(int machinecount, int jobcount) {
+        GeneticAlgorithm.machinecount = machinecount;
+        GeneticAlgorithm.jobcount = jobcount;
     }
 
     public <E, L extends List<E>> void swap(final L list1, final L list2,
@@ -47,7 +53,6 @@ public class Tournament {
         LiangGaoCrossover(a, b);
     }
 
-
     public DSolution[] CeiliPair(final DSolution[] oldPop) {
         ArrayList<DSolution> newSolutions = new ArrayList<>();
         for (int i = 0; i < oldPop.length / 2; i++) {
@@ -70,10 +75,10 @@ public class Tournament {
     }
 
     public void ImproveMe(DSolution d, int runs) {
-       // d.MakeFeasible();
+        // d.MakeFeasible();
         for (int j = 0; j < runs; j++) {
             DSolution mut = mutate(d);
-           // mut.MakeFeasible();
+            // mut.MakeFeasible();
             if (mut.Score(true) <= d.Score(false)) {
                 d = mut;
             }
@@ -86,8 +91,8 @@ public class Tournament {
         m.Score(true);
         for (int i = 0; i < runs; i++) {
             DSolution mm = mutate(d);
-         //   mm.MakeFeasible();
-            if(mm.Score(true) < m.Score(false)){
+            //   mm.MakeFeasible();
+            if (mm.Score(true) < m.Score(false)) {
                 m = mm;
             }
         }
@@ -95,19 +100,24 @@ public class Tournament {
     }
 
     public DSolution[] TournamentPair(final DSolution[] oldPop, int offset) {
-        DSolution[] rndSolutions = new DSolution[128];
+        DSolution[] rndSolutions = new DSolution[tournamentSampleSize];
         //pick  N random solutions from old pop
-        ArrayList<Integer> is= new ArrayList<>();
+        ArrayList<Integer> is = new ArrayList<>();
         for (int i = 0; i < rndSolutions.length; i++) {
             int r = (int) Math.floor(Math.random() * (double) (oldPop.length));
-            while(is.contains(r)){
+            int whileGuard = 0;
+            while (is.contains(r)) {
+                whileGuard++;
+                if (whileGuard > 2048) {
+                    continue;
+                }
                 r = (int) Math.floor(Math.random() * (double) (oldPop.length));
             }
             is.add(r);
             rndSolutions[i] = oldPop[r];
         }
         Arrays.sort(rndSolutions);
-        DSolution[] newChilderen = new DSolution[10];
+        DSolution[] newChilderen = new DSolution[tournamentNewChilderenCount];
         for (int i = 0; i < newChilderen.length; i++) {
             DSolution a = new DSolution(machinecount, jobcount);
             DSolution b = new DSolution(machinecount, jobcount);
@@ -126,11 +136,9 @@ public class Tournament {
         for (int i = 0; i < newChilderen.length; i++) {
             //ImproveMe(newChilderen[i], 64);
 
-            newChilderen[i] = getBestMutant(newChilderen[i],128);
-            //newChilderen[i] = getBestMutant(newChilderen[i],32);
-            //newChilderen[i] = getBestMutant(newChilderen[i],32);
-            if(soltionWithin(oldPop,newChilderen[i])) {
-                newChilderen[i] = DSolution.getRand(false, 20);
+            newChilderen[i] = getBestMutant(newChilderen[i], tournamentMutateRange);
+            if (solutionWithin(oldPop, newChilderen[i])) {
+                newChilderen[i] = DSolution.getRand(false, 20, goal);
             }
 
         }
@@ -163,9 +171,9 @@ public class Tournament {
         return newSolutions.toArray(new DSolution[newSolutions.size()]);
     }
 
-    public boolean soltionWithin(DSolution[] p, DSolution a){
+    public boolean solutionWithin(DSolution[] p, DSolution a) {
         for (int j = 0; j < p.length; j++) {
-            if(DSolution.isEqual(p[j],a)){
+            if (DSolution.isEqual(p[j], a)) {
                 return true;
             }
         }
@@ -175,15 +183,14 @@ public class Tournament {
     public void RemoveDupes(DSolution[] p) {
         for (int i = 0; i < p.length - 1; i++) {
             for (int j = i + 1; j < p.length - 1; j++) {
-                if(!DSolution.isEqual(p[i],p[j])){
-                    continue ;
+                if (!DSolution.isEqual(p[i], p[j])) {
+                    continue;
                 }
-                System.out.println(i + " is dupe! "+j);
-                p[i] = DSolution.getRand(true, 64);
+                System.out.println(i + " is dupe! " + j);
+                p[i] = DSolution.getRand(true, 64, goal);
             }
         }
     }
-
 
     public void mutateMe(DSolution s) {
         int j = (int) Math.floor(Math.random() * ((double) s.sol.length));
@@ -207,64 +214,70 @@ public class Tournament {
         return newSol;
     }
 
-    public void Churn(DSolution[] population, DProblem problem, int runs) {
+    public GenAlgResult Start(DSolution[] population, DProblem problem, int runs) {
         int prevavg = 0;
         int prevavg10 = 0;
         int improvement;
         int divergence;
         int best = 0;
-        int popIncrease = 0;
+        int resets = 0;
+        int[] divergenceAverage = new int[10];
+        long[] generationTimeAverage = new long[10];
+        int dai = 0;
+        int gtai = 0;
+
+        for (int i = 0; i < MAIN_POP_SIZE; i++) {
+            if (i % 64 == 0) {
+                System.out.println("PreGen " + i * 100 / MAIN_POP_SIZE + "%");
+            }
+            population[i] = DSolution.getRand(true, seedRange, goal);
+        }
+
         Arrays.sort(population);
         int bestever = Integer.MAX_VALUE;
-        for (int i = 0; i < (i + 1); i++) {
+        int i = 0;
+        long startTime = System.currentTimeMillis();
+        while (true) {
 
-            if(i>10 && i %200 ==0){
+            if (i > 2 && i % resetTrigger == 0) {
+                resets++;
                 for (int j = 1; j < population.length; j++) {
                     population[j] = mutate(population[0]);
-                    while(soltionWithin(Arrays.copyOfRange(population,0,j),population[j])){
+                    int whileGuard = 0;
+                    while (solutionWithin(Arrays.copyOfRange(population, 0, j), population[j])) {
                         mutateMe(population[j]);
+                        if (whileGuard > 4092) {
+                            return new GenAlgResult("stall", bestever, i,System.currentTimeMillis() - startTime);
+                        }
+                        whileGuard++;
                     }
                 }
             }
+            long GenStartTime = System.currentTimeMillis();
 
             DSolution[] newChilderen = Pair(population, 0);
             DSolution[] newPop = new DSolution[population.length + newChilderen.length];
-           // RemoveDupes(newChilderen);
             System.arraycopy(population, 0, newPop, 0, population.length);
             System.arraycopy(newChilderen, 0, newPop, population.length, newChilderen.length);
-            //RemoveDupes(newPop);
             Arrays.sort(newPop);
             System.arraycopy(newPop, 0, population, 0, population.length);
-
-            //System.out.println();
-            Arrays.sort(population);
-            for (int j = 1; j < population.length - 1; j++) {
-                double chance = ((double) j / (double) population.length) - 0.1;
-                if (Math.random() < chance) {
-                    //   mutateMe(population[j]);
-                }
-            }
-            /*
-            for (int j = population.length - 10; j < population.length - 1; j++) {
-                DSolution d = new DSolution(JSSP.getRandomSolution(Main.problem.pProblem), Main.problem.machineCount, Main.problem.jobCount);
-                if(d.Score(true) <= population[j].Score(false) ){
-                    population[j] = d;
-                    //System.out.println("boop");
-                }
-            }*/
-
             RemoveDupes(population);
-            //Arrays.sort(population);
 
+            generationTimeAverage[gtai++] = System.currentTimeMillis() - GenStartTime;
+            if (gtai >= generationTimeAverage.length) {
+                gtai = 0;
+            }
 
             int ob = best;
             best = population[0].Score(false);
             bestever = Math.min(bestever, best);
-            if (bestever <= problem.lb) {
+
+            if (bestever <= goal) {
                 System.out.print("BEST SOLUTION FOUND! Generation: " + i);
-                return;
+                return new GenAlgResult("done", bestever, i, System.currentTimeMillis() - startTime);
             }
-            if (ob != best || i % 500 == 0) {
+
+            if (ob != best || i % 10 == 0) {
                 int avg = 0, avg50 = 0, avg25 = 0, avg10 = 0;
                 for (int j = 0; j < population.length; j++) {
                     if (j < Math.floor(population.length * 0.1)) {
@@ -283,25 +296,36 @@ public class Tournament {
                 avg25 /= (population.length * 0.25);
                 avg10 /= (population.length * 0.1);
 
-
                 improvement = avg10 - prevavg10;
                 divergence = avg - prevavg;
                 prevavg10 = avg10;
                 prevavg = avg;
-                if (divergence < 200) {
-                    popIncrease += 8;
-                } else if (divergence > 400) {
-                    popIncrease = Math.max(popIncrease - 4, 0);
+                divergenceAverage[dai++] = divergence;
+                if (dai >= divergenceAverage.length) {
+                    dai = 0;
                 }
-                popIncrease = Math.min(1024, popIncrease);
+                int da = 0;
+                for (int d : divergenceAverage) {
+                    da += d;
+                }
+                da /= divergenceAverage.length;
+                long gta = 0;
+                for (long d : generationTimeAverage) {
+                    gta += d;
+                }
+                gta /= generationTimeAverage.length;
+                //evaluate ending
+                if ((improvement == 0 && da == 0 && i > 10) || (i > 20000) || (System.currentTimeMillis() - startTime) > 600000) {
+                    return new GenAlgResult("stall", bestever, i,System.currentTimeMillis() - startTime);
+                }
                 System.out.print("Run: " + i + " BestEver: " + bestever + " Top:" + best + " avg10:" + avg10 + " avg25:" + avg25 + " avg50:" + avg50 + " avg:" + avg);
-                System.out.print(" improvement: " + improvement + "\tdivergence:" + divergence + "\tpopIncrease:" + popIncrease + " " + population.length);
+                System.out.print(" improvement: " + improvement + "\tdivergence:" + divergence + "\tdivavg:" + da + "\tresets:" + resets + "\tGenTime:" + gta);
                 System.out.println();
+                i++;
             }
         }
-        int gg = 0;
+        //return new GenAlgResult("stall",bestever,0);
     }
-
 
     public void LiangGaoCrossover(DSolution s1, DSolution s2) {
         final int totalJobs = s1.sol[0].length;
@@ -350,7 +374,6 @@ public class Tournament {
             }
         }
     }
-
 
     public void RenQingCrossover(DSolution s1, DSolution s2) {
 

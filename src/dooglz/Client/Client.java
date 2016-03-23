@@ -2,9 +2,6 @@ package dooglz.Client;
 
 import static dooglz.Constants.*;
 
-import dooglz.DJSSP;
-import dooglz.Tournament;
-import modelP.JSSP;
 import modelP.Problem;
 import org.java_websocket.drafts.Draft_17;
 
@@ -87,7 +84,7 @@ public class Client {
             return;
         }
         while( true) {
-           // Tournament.Churn(population, problem, 100);
+           // GeneticAlgorithm.Churn(population, problem, 100);
         }
     }
 

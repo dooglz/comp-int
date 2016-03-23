@@ -87,7 +87,7 @@ public class DSolution implements Comparator<DSolution>, Comparable<DSolution> {
         }
     }
 
-    static DSolution getRand(boolean optimised, int searchspace){
+    static DSolution getRand(boolean optimised, int searchspace, int goal){
         if(searchspace < 1){
             searchspace = 1;
         }
@@ -95,7 +95,7 @@ public class DSolution implements Comparator<DSolution>, Comparable<DSolution> {
         for (int i = 0; i < searchspace; i++) {
             ss[i] = new DSolution(JSSP.getRandomSolution(Main.problem.pProblem),Main.problem.machineCount, Main.problem.jobCount);
             if(optimised){ss[i].MakeFeasible();}
-            if(ss[i].Score(true) <= Main.problem.lb){System.out.println("yolo");return ss[i];}
+            if(ss[i].Score(true) <= goal){System.out.println("yolo");return ss[i];}
         }
         Arrays.sort(ss);
         return ss[0];
