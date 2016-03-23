@@ -39,7 +39,7 @@ public class Main {
            // population[i] = new DSolution(JSSP.getRandomSolution(mpp), problem.machineCount, problem.jobCount);
             //population[i].MakeFeasible();
             if(i%64==0){System.out.println(".");}
-            population[i] = DSolution.getRand(true,400);
+            population[i] = DSolution.getRand(true,32);
         }
         tournament.Churn(population,problem,10512);
         int a = 6;

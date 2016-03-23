@@ -42,10 +42,11 @@ public class Tournament {
     public void Crossover(DSolution a, DSolution b) {
         //PMXCrossover(a, b);
         //SPCrossover(a, b);
-        //MPCrossover(a,b);
+        //MPCrossover(a, b);
         //RenQingCrossover(a,b);
         LiangGaoCrossover(a, b);
     }
+
 
     public DSolution[] CeiliPair(final DSolution[] oldPop) {
         ArrayList<DSolution> newSolutions = new ArrayList<>();
@@ -68,32 +69,73 @@ public class Tournament {
         return newSolutions.toArray(new DSolution[newSolutions.size()]);
     }
 
-    public DSolution[] TournamentPair(final DSolution[] oldPop, int offset) {
-        ArrayList<DSolution> newSolutions = new ArrayList<>();
-        for (int i = 0; i < offset; i++) {
-            newSolutions.add(oldPop[i]);
-            newSolutions.add(oldPop[oldPop.length - 1 - i]);
-        }
-        for (int i = offset; i < oldPop.length - 1; i += 2) {
-            if (Math.random() < 0.6) {
-                newSolutions.add(oldPop[i]);
-                newSolutions.add(oldPop[i + 1]);
-            } else {
-
-                DSolution newSol1 = new DSolution(machinecount, jobcount);
-                DSolution newSol2 = new DSolution(machinecount, jobcount);
-                newSol1.sol = cpy2D(oldPop[i].sol);
-                newSol2.sol = cpy2D(oldPop[i + 1].sol);
-                newSol1.age = Math.max(oldPop[i].age, oldPop[i + 1].age);
-                newSol2.age = newSol1.age;
-                Crossover(newSol1, newSol2);
-                newSolutions.add(newSol1);
-                newSolutions.add(newSol2);
-                // System.out.print(" " + i + "&" + (i+1) + " " + (newSol1.Score() - oldPop[i].Score())+ " " + (newSol2.Score() - oldPop[i+1].Score()) );
+    public void ImproveMe(DSolution d, int runs) {
+       // d.MakeFeasible();
+        for (int j = 0; j < runs; j++) {
+            DSolution mut = mutate(d);
+           // mut.MakeFeasible();
+            if (mut.Score(true) <= d.Score(false)) {
+                d = mut;
             }
         }
-        // System.out.println();
-        return newSolutions.toArray(new DSolution[newSolutions.size()]);
+    }
+
+    public DSolution getBestMutant(DSolution d, int runs) {
+        DSolution m = mutate(d);
+        //m.MakeFeasible();
+        m.Score(true);
+        for (int i = 0; i < runs; i++) {
+            DSolution mm = mutate(d);
+         //   mm.MakeFeasible();
+            if(mm.Score(true) < m.Score(false)){
+                m = mm;
+            }
+        }
+        return m;
+    }
+
+    public DSolution[] TournamentPair(final DSolution[] oldPop, int offset) {
+        DSolution[] rndSolutions = new DSolution[128];
+        //pick  N random solutions from old pop
+        ArrayList<Integer> is= new ArrayList<>();
+        for (int i = 0; i < rndSolutions.length; i++) {
+            int r = (int) Math.floor(Math.random() * (double) (oldPop.length));
+            while(is.contains(r)){
+                r = (int) Math.floor(Math.random() * (double) (oldPop.length));
+            }
+            is.add(r);
+            rndSolutions[i] = oldPop[r];
+        }
+        Arrays.sort(rndSolutions);
+        DSolution[] newChilderen = new DSolution[10];
+        for (int i = 0; i < newChilderen.length; i++) {
+            DSolution a = new DSolution(machinecount, jobcount);
+            DSolution b = new DSolution(machinecount, jobcount);
+            a.sol = cpy2D(rndSolutions[i * 2].sol);
+            b.sol = cpy2D(rndSolutions[(i * 2) + 1].sol);
+            a.age = Math.max(rndSolutions[i * 2].age, rndSolutions[(i * 2) + 1].age);
+            b.age = a.age;
+            Crossover(a, b);
+            if (a.Score(true) > b.Score(true)) {
+                newChilderen[i] = a;
+            } else {
+                newChilderen[i] = b;
+            }
+        }
+        //local search
+        for (int i = 0; i < newChilderen.length; i++) {
+            //ImproveMe(newChilderen[i], 64);
+
+            newChilderen[i] = getBestMutant(newChilderen[i],128);
+            //newChilderen[i] = getBestMutant(newChilderen[i],32);
+            //newChilderen[i] = getBestMutant(newChilderen[i],32);
+            if(soltionWithin(oldPop,newChilderen[i])) {
+                newChilderen[i] = DSolution.getRand(false, 20);
+            }
+
+        }
+
+        return newChilderen;
     }
 
     public DSolution[] RandPair(final DSolution[] oldPop) {
@@ -121,21 +163,23 @@ public class Tournament {
         return newSolutions.toArray(new DSolution[newSolutions.size()]);
     }
 
+    public boolean soltionWithin(DSolution[] p, DSolution a){
+        for (int j = 0; j < p.length; j++) {
+            if(DSolution.isEqual(p[j],a)){
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void RemoveDupes(DSolution[] p) {
         for (int i = 0; i < p.length - 1; i++) {
-            outer:
             for (int j = i + 1; j < p.length - 1; j++) {
-                for (int k = 0; k < p[i].sol.length - 1; k++) {
-                    for (int l = 0; l < p[i].sol[k].length - 1; l++) {
-                        if (p[i].sol[k][l] != p[j].sol[k][l]) {
-                            continue outer;
-                        }
-                    }
-
+                if(!DSolution.isEqual(p[i],p[j])){
+                    continue ;
                 }
-                //must be equal
-                System.out.println(i + " is dupe!");
-                p[i] = DSolution.getRand(true, 20);
+                System.out.println(i + " is dupe! "+j);
+                p[i] = DSolution.getRand(true, 64);
             }
         }
     }
@@ -174,8 +218,24 @@ public class Tournament {
         int bestever = Integer.MAX_VALUE;
         for (int i = 0; i < (i + 1); i++) {
 
-            DSolution[] newChilderen = Pair(population, i % 2);
-            System.arraycopy(newChilderen, 0, population, 0, population.length);
+            if(i>10 && i %200 ==0){
+                for (int j = 1; j < population.length; j++) {
+                    population[j] = mutate(population[0]);
+                    while(soltionWithin(Arrays.copyOfRange(population,0,j),population[j])){
+                        mutateMe(population[j]);
+                    }
+                }
+            }
+
+            DSolution[] newChilderen = Pair(population, 0);
+            DSolution[] newPop = new DSolution[population.length + newChilderen.length];
+           // RemoveDupes(newChilderen);
+            System.arraycopy(population, 0, newPop, 0, population.length);
+            System.arraycopy(newChilderen, 0, newPop, population.length, newChilderen.length);
+            //RemoveDupes(newPop);
+            Arrays.sort(newPop);
+            System.arraycopy(newPop, 0, population, 0, population.length);
+
             //System.out.println();
             Arrays.sort(population);
             for (int j = 1; j < population.length - 1; j++) {
@@ -194,7 +254,7 @@ public class Tournament {
             }*/
 
             RemoveDupes(population);
-            Arrays.sort(population);
+            //Arrays.sort(population);
 
 
             int ob = best;
@@ -330,7 +390,7 @@ public class Tournament {
         //pick a cxoS point
         int cxo1 = (int) Math.floor(Math.random() * ((double) s1.sol[m].length - 1));
         int cxo2 = cxo1;
-        while (cxo1 != cxo2) {
+        while (cxo1 == cxo2) {
             cxo2 = (int) Math.floor(Math.random() * ((double) s1.sol[m].length - 1));
         }
         int cxop = Math.min(cxo1, cxo2);

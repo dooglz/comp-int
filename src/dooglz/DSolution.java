@@ -25,6 +25,16 @@ public class DSolution implements Comparator<DSolution>, Comparable<DSolution> {
         this.sol = sol;
         this.score_ = -1;
     }
+    public static boolean isEqual(DSolution a, DSolution b){
+        for (int i = 0; i < a.sol.length; i++) {
+            for (int j = 0; j < a.sol[i].length; j++) {
+                if(a.sol[i][j] != b.sol[i][j]){
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 
     @Override
     public int compare(DSolution a, DSolution b) {
@@ -85,6 +95,7 @@ public class DSolution implements Comparator<DSolution>, Comparable<DSolution> {
         for (int i = 0; i < searchspace; i++) {
             ss[i] = new DSolution(JSSP.getRandomSolution(Main.problem.pProblem),Main.problem.machineCount, Main.problem.jobCount);
             if(optimised){ss[i].MakeFeasible();}
+            if(ss[i].Score(true) <= Main.problem.lb){System.out.println("yolo");return ss[i];}
         }
         Arrays.sort(ss);
         return ss[0];
