@@ -43,7 +43,8 @@ public class Tournament {
         //PMXCrossover(a, b);
         //SPCrossover(a, b);
         //MPCrossover(a,b);
-        RenQingCrossover(a,b);
+        //RenQingCrossover(a,b);
+        LiangGaoCrossover(a, b);
     }
 
     public DSolution[] CeiliPair(final DSolution[] oldPop) {
@@ -74,7 +75,7 @@ public class Tournament {
             newSolutions.add(oldPop[oldPop.length - 1 - i]);
         }
         for (int i = offset; i < oldPop.length - 1; i += 2) {
-            if (Math.random() < 0.9) {
+            if (Math.random() < 0.6) {
                 newSolutions.add(oldPop[i]);
                 newSolutions.add(oldPop[i + 1]);
             } else {
@@ -134,7 +135,7 @@ public class Tournament {
                 }
                 //must be equal
                 System.out.println(i + " is dupe!");
-                p[i] = DSolution.getRand(true,20);
+                p[i] = DSolution.getRand(true, 20);
             }
         }
     }
@@ -180,7 +181,7 @@ public class Tournament {
             for (int j = 1; j < population.length - 1; j++) {
                 double chance = ((double) j / (double) population.length) - 0.1;
                 if (Math.random() < chance) {
-                    mutateMe(population[j]);
+                    //   mutateMe(population[j]);
                 }
             }
             /*
@@ -198,12 +199,12 @@ public class Tournament {
 
             int ob = best;
             best = population[0].Score(false);
-            bestever = Math.min(bestever,best);
-            if(bestever <= problem.lb){
-                System.out.print("BEST SOLUTION FOUND! Generation: "+i);
+            bestever = Math.min(bestever, best);
+            if (bestever <= problem.lb) {
+                System.out.print("BEST SOLUTION FOUND! Generation: " + i);
                 return;
             }
-            if (ob != best || i%500 ==0 ) {
+            if (ob != best || i % 500 == 0) {
                 int avg = 0, avg50 = 0, avg25 = 0, avg10 = 0;
                 for (int j = 0; j < population.length; j++) {
                     if (j < Math.floor(population.length * 0.1)) {
@@ -233,7 +234,7 @@ public class Tournament {
                     popIncrease = Math.max(popIncrease - 4, 0);
                 }
                 popIncrease = Math.min(1024, popIncrease);
-                System.out.print("Run: " + i + " BestEver: "+bestever+" Top:" + best + " avg10:" + avg10 + " avg25:" + avg25 + " avg50:" + avg50 + " avg:" + avg);
+                System.out.print("Run: " + i + " BestEver: " + bestever + " Top:" + best + " avg10:" + avg10 + " avg25:" + avg25 + " avg50:" + avg50 + " avg:" + avg);
                 System.out.print(" improvement: " + improvement + "\tdivergence:" + divergence + "\tpopIncrease:" + popIncrease + " " + population.length);
                 System.out.println();
             }
@@ -241,14 +242,64 @@ public class Tournament {
         int gg = 0;
     }
 
+
+    public void LiangGaoCrossover(DSolution s1, DSolution s2) {
+        final int totalJobs = s1.sol[0].length;
+        final int[] setA = new int[totalJobs / 2];
+        final int[] setB = new int[(totalJobs / 2) + (totalJobs % 2)];
+        int ai = 0, bi = 0;
+        //split jobs randomly into two sets
+        for (int i = 0; i < totalJobs; i++) {
+            boolean which = false;
+            if (ai < setA.length && bi < setB.length) {
+                if (Math.random() < 0.5) {
+                    which = true;
+                }
+            } else if (bi < setB.length) {
+                which = true;
+            }
+
+            if (!which) {
+                setA[ai] = i;
+                ai++;
+            } else {
+                setB[bi] = i;
+                bi++;
+            }
+        }
+        for (int m = 0; m < s1.sol.length; m++) {
+            ai = 0;
+            bi = 0;
+            for (int job = 0; job < s1.sol[m].length; job++) {
+                if (find(setA, s1.sol[m][job]) == -1) {
+                    //replace with an item of setB, from s2, in the order of s2
+                    while (find(setB, s2.sol[m][ai]) == -1) {
+                        ai++;
+                    }
+                    s1.sol[m][job] = s2.sol[m][ai];
+                    ai++;
+                }
+                if (find(setB, s2.sol[m][job]) == -1) {
+                    //replace with an item of setA from s1, in the order of s1
+                    while (find(setA, s1.sol[m][bi]) == -1) {
+                        bi++;
+                    }
+                    s2.sol[m][job] = s1.sol[m][bi];
+                    bi++;
+                }
+            }
+        }
+    }
+
+
     public void RenQingCrossover(DSolution s1, DSolution s2) {
 
         //pick a random set of machines
-       // final int mc = (int) Math.floor(Math.random() * ((double) s1.sol.length));
+        // final int mc = (int) Math.floor(Math.random() * ((double) s1.sol.length));
         int mc = 1;
-        List<Integer> mcs = IntStream.rangeClosed(0, s1.sol.length-1).boxed().collect(Collectors.toList());
+        List<Integer> mcs = IntStream.rangeClosed(0, s1.sol.length - 1).boxed().collect(Collectors.toList());
         Collections.shuffle(mcs);
-        mcs = mcs.subList(0,mc);
+        mcs = mcs.subList(0, mc);
         for (Integer i : mcs) {
             int[] tmp = s1.sol[i];
             s1.sol[i] = s2.sol[i];
@@ -279,11 +330,11 @@ public class Tournament {
         //pick a cxoS point
         int cxo1 = (int) Math.floor(Math.random() * ((double) s1.sol[m].length - 1));
         int cxo2 = cxo1;
-        while(cxo1 != cxo2){
+        while (cxo1 != cxo2) {
             cxo2 = (int) Math.floor(Math.random() * ((double) s1.sol[m].length - 1));
         }
-        int cxop = Math.min(cxo1,cxo2);
-        int cxopE = Math.max(cxo1,cxo2);
+        int cxop = Math.min(cxo1, cxo2);
+        int cxopE = Math.max(cxo1, cxo2);
 
         //swap elememts
         for (int i = cxop; i < cxopE; i++) {

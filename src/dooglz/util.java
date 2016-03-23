@@ -29,4 +29,13 @@ public class util {
                 current[i][j] = old[i][j];
         return current;
     }
+
+    public static int find(final int[]ar, int a){
+        for (int i = 0; i < ar.length; i++) {
+            if(ar[i] == a){
+                return i;
+            }
+        }
+        return -1;
+    }
 }
