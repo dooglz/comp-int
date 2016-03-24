@@ -30,12 +30,28 @@ public class util {
         return current;
     }
 
-    public static int find(final int[]ar, int a){
+    public static int find(final int[] ar, int a) {
         for (int i = 0; i < ar.length; i++) {
-            if(ar[i] == a){
+            if (ar[i] == a) {
                 return i;
             }
         }
         return -1;
     }
+
+    public static <E, L extends List<E>> void swap(final L list1, final L list2,
+                                                   final int index) {
+        final E temp = list1.get(index);
+        list1.set(index, list2.get(index));
+        list2.set(index, temp);
+
+    }
+
+    public static <E, L extends List<E>> void swap(final L list1, final L list2,
+                                                   final int start, final int end) {
+        for (int i = start; i < end; i++) {
+            swap(list1, list2, i);
+        }
+    }
+
 }

@@ -21,17 +21,17 @@ public class DProblem {
     final public int machineCount;
     final public int lb;
 
-    public DProblem(modelP.Problem p)  throws IllegalStateException{
+    public DProblem(modelP.Problem p) throws IllegalStateException {
         this.pProblem = p;
         this.jobCount = p.getNumberOfJobs();
         this.machineCount = p.getNumberOfMachines();
         this.machines = new DMachine[machineCount];
-        this.jobs= new DJob[jobCount];
+        this.jobs = new DJob[jobCount];
         //sort descending by total processing time
         //this.sortedjobs = new DJob[jobCount];
 
         for (int i = 0; i < machineCount; i++) {
-            this.machines[i] = new DMachine(machineCount,i);
+            this.machines[i] = new DMachine(machineCount, i);
         }
 
         //steal array of jobs
@@ -48,11 +48,11 @@ public class DProblem {
         this.lb = p.getLowerBound();
         //turn pjobs into DJobs
         for (int jobid = 0; jobid < jobCount; ++jobid) {
-            this.jobs[jobid] = new DJob(pjobs[jobid],machineCount, this.machines,jobid);
+            this.jobs[jobid] = new DJob(pjobs[jobid], machineCount, this.machines, jobid);
         }
 
         //copy array of jobs
-        ArrayList<DJob> sortedjobsAL = new  ArrayList<DJob>(Arrays.asList(this.jobs));
+        ArrayList<DJob> sortedjobsAL = new ArrayList<DJob>(Arrays.asList(this.jobs));
         Collections.sort(sortedjobsAL);
         Collections.reverse(sortedjobsAL);
         this.sortedjobs = sortedjobsAL.toArray(new DJob[sortedjobsAL.size()]);

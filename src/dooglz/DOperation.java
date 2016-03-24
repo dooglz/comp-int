@@ -13,7 +13,7 @@ public class DOperation {
     final int duration;
     final int id;
 
-    public DOperation(DMachine[] machines, DJob job, modelP.Operation op, int id) throws IllegalStateException{
+    public DOperation(DMachine[] machines, DJob job, modelP.Operation op, int id) throws IllegalStateException {
 
         this.job = job;
         this.pop = op;
@@ -24,7 +24,7 @@ public class DOperation {
             f.setAccessible(true);
             dur = (int) f.get(op);
         } catch (Exception e) {
-           throw new IllegalStateException();
+            throw new IllegalStateException();
         }
         this.duration = dur;
 

@@ -28,10 +28,11 @@ public class DSolution implements Comparator<DSolution>, Comparable<DSolution> {
         this.sol = sol;
         this.score_ = -1;
     }
-    public static boolean isEqual(DSolution a, DSolution b){
+
+    public static boolean isEqual(DSolution a, DSolution b) {
         for (int i = 0; i < a.sol.length; i++) {
             for (int j = 0; j < a.sol[i].length; j++) {
-                if(a.sol[i][j] != b.sol[i][j]){
+                if (a.sol[i][j] != b.sol[i][j]) {
                     return false;
                 }
             }
@@ -90,26 +91,31 @@ public class DSolution implements Comparator<DSolution>, Comparable<DSolution> {
         }
     }
 
-    static DSolution getRand(DProblem prob, boolean optimised, int searchspace, int goal){
-        if(searchspace < 1){
+    static DSolution getRand(DProblem prob, boolean optimised, int searchspace, int goal) {
+        if (searchspace < 1) {
             searchspace = 1;
         }
         DSolution ss[] = new DSolution[searchspace];
         for (int i = 0; i < searchspace; i++) {
-            ss[i] = new DSolution(prob, JSSP.getRandomSolution(prob.pProblem),prob.machineCount, prob.jobCount);
-            if(optimised){ss[i].MakeFeasible();}
-            if(ss[i].Score(true) <= goal){System.out.println("yolo");return ss[i];}
+            ss[i] = new DSolution(prob, JSSP.getRandomSolution(prob.pProblem), prob.machineCount, prob.jobCount);
+            if (optimised) {
+                ss[i].MakeFeasible();
+            }
+            if (ss[i].Score(true) <= goal) {
+                System.out.println("yolo");
+                return ss[i];
+            }
         }
         Arrays.sort(ss);
         return ss[0];
     }
 
-    public boolean IsFeasible(){
+    public boolean IsFeasible() {
         for (int m = 0; m < this.sol.length; m++) {
             int lastop = -1;
             for (int j = 0; j < this.sol[m].length; j++) {
                 final int op = prob.jobs[j].GetOperationOnMachine(prob.machines[m]).id;
-                if (op < lastop){
+                if (op < lastop) {
                     System.out.println("false");
                     return false;
                 }

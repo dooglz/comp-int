@@ -2,11 +2,14 @@ package dooglz;
 
 import modelP.JSSP;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import static dooglz.util.*;
 
+import static dooglz.util.*;
 
 public class GeneticAlgorithm {
     public GenAlgParams p;
@@ -21,19 +24,118 @@ public class GeneticAlgorithm {
         this.jobcount = problem.jobCount;
     }
 
-    public <E, L extends List<E>> void swap(final L list1, final L list2,
-                                            final int index) {
-        final E temp = list1.get(index);
-        list1.set(index, list2.get(index));
-        list2.set(index, temp);
+    public GenAlgResult Start() {
+        int prevavg = 0;
+        int prevavg10 = 0;
+        int improvement;
+        int divergence;
+        int best = 0;
+        int resets = 0;
+        int[] divergenceAverage = new int[10];
+        long[] generationTimeAverage = new long[10];
+        int dai = 0;
+        int gtai = 0;
+        DSolution population[] = new DSolution[p.popsize];
 
-    }
-
-    public <E, L extends List<E>> void swap(final L list1, final L list2,
-                                            final int start, final int end) {
-        for (int i = start; i < end; i++) {
-            swap(list1, list2, i);
+        for (int i = 0; i < p.popsize; i++) {
+            if (i % 64 == 0) {
+                System.out.println("PreGen " + i * 100 / p.popsize + "%");
+            }
+            population[i] = DSolution.getRand(problem, true, p.seedRange, p.goal);
         }
+
+        Arrays.sort(population);
+        int bestever = Integer.MAX_VALUE;
+        int i = 0;
+        long startTime = System.currentTimeMillis();
+        while (true) {
+
+            if (i > 2 && i % p.resetTrigger == 0) {
+                resets++;
+                for (int j = 1; j < population.length; j++) {
+                    population[j] = mutate(population[0]);
+                    int whileGuard = 0;
+                    while (solutionWithin(Arrays.copyOfRange(population, 0, j), population[j])) {
+                        mutateMe(population[j]);
+                        if (whileGuard > 4092) {
+                            return new GenAlgResult("stall", bestever, i, System.currentTimeMillis() - startTime);
+                        }
+                        whileGuard++;
+                    }
+                }
+            }
+            long GenStartTime = System.currentTimeMillis();
+
+            DSolution[] newChilderen = Pair(population, 0);
+            DSolution[] newPop = new DSolution[population.length + newChilderen.length];
+            System.arraycopy(population, 0, newPop, 0, population.length);
+            System.arraycopy(newChilderen, 0, newPop, population.length, newChilderen.length);
+            Arrays.sort(newPop);
+            System.arraycopy(newPop, 0, population, 0, population.length);
+            RemoveDupes(population);
+
+            generationTimeAverage[gtai++] = System.currentTimeMillis() - GenStartTime;
+            if (gtai >= generationTimeAverage.length) {
+                gtai = 0;
+            }
+
+            int ob = best;
+            best = population[0].Score(false);
+            bestever = Math.min(bestever, best);
+
+            if (bestever <= p.goal) {
+                System.out.print("BEST SOLUTION FOUND! Generation: " + i);
+                return new GenAlgResult("done", bestever, i, System.currentTimeMillis() - startTime);
+            }
+
+            if (ob != best || i % 10 == 0) {
+                int avg = 0, avg50 = 0, avg25 = 0, avg10 = 0;
+                for (int j = 0; j < population.length; j++) {
+                    if (j < Math.floor(population.length * 0.1)) {
+                        avg10 += population[j].Score(false);
+                    }
+                    if (j < Math.floor(population.length * 0.25)) {
+                        avg25 += population[j].Score(false);
+                    }
+                    if (j < Math.floor(population.length * 0.5)) {
+                        avg50 += population[j].Score(false);
+                    }
+                    avg += population[j].Score(false);
+                }
+                avg /= population.length;
+                avg50 /= (population.length * 0.5);
+                avg25 /= (population.length * 0.25);
+                avg10 /= (population.length * 0.1);
+
+                improvement = avg10 - prevavg10;
+                divergence = avg - prevavg;
+                prevavg10 = avg10;
+                prevavg = avg;
+                divergenceAverage[dai++] = divergence;
+                if (dai >= divergenceAverage.length) {
+                    dai = 0;
+                }
+                int da = 0;
+                for (int d : divergenceAverage) {
+                    da += d;
+                }
+                da /= divergenceAverage.length;
+                long gta = 0;
+                for (long d : generationTimeAverage) {
+                    gta += d;
+                }
+                gta /= generationTimeAverage.length;
+                //evaluate ending
+                if ((improvement == 0 && da == 0 && i > 10) || (i > p.maxGen) || (System.currentTimeMillis() - startTime) > p.maxTime) {
+                    return new GenAlgResult("stall", bestever, i, System.currentTimeMillis() - startTime);
+                }
+                System.out.print("Run: " + i + " BestEver: " + bestever + " Top:" + best + " avg10:" + avg10 + " avg25:" + avg25 + " avg50:" + avg50 + " avg:" + avg);
+                System.out.print(" improvement: " + improvement + "\tdivergence:" + divergence + "\tdivavg:" + da + "\tresets:" + resets + "\tGenTime:" + gta);
+                System.out.println();
+                i++;
+            }
+        }
+        //return new GenAlgResult("stall",bestever,0);
     }
 
     public DSolution[] Pair(final DSolution[] oldPop, int offset) {
@@ -43,7 +145,7 @@ public class GeneticAlgorithm {
     }
 
     public void Crossover(DSolution a, DSolution b) {
-        switch (p.crossovermode){
+        switch (p.crossovermode) {
             case 1:
                 SPCrossover(a, b);
                 break;
@@ -54,7 +156,7 @@ public class GeneticAlgorithm {
                 PMXCrossover(a, b);
                 break;
             case 4:
-                RenQingCrossover(a,b);
+                RenQingCrossover(a, b);
                 break;
             case 5:
                 LiangGaoCrossover(a, b);
@@ -94,20 +196,6 @@ public class GeneticAlgorithm {
                 d = mut;
             }
         }
-    }
-
-    public DSolution getBestMutant(DSolution d, int runs) {
-        DSolution m = mutate(d);
-        //m.MakeFeasible();
-        m.Score(true);
-        for (int i = 0; i < runs; i++) {
-            DSolution mm = mutate(d);
-            //   mm.MakeFeasible();
-            if (mm.Score(true) < m.Score(false)) {
-                m = mm;
-            }
-        }
-        return m;
     }
 
     public DSolution[] TournamentPair(final DSolution[] oldPop, int offset) {
@@ -225,118 +313,18 @@ public class GeneticAlgorithm {
         return newSol;
     }
 
-    public GenAlgResult Start() {
-        int prevavg = 0;
-        int prevavg10 = 0;
-        int improvement;
-        int divergence;
-        int best = 0;
-        int resets = 0;
-        int[] divergenceAverage = new int[10];
-        long[] generationTimeAverage = new long[10];
-        int dai = 0;
-        int gtai = 0;
-        DSolution population[] = new DSolution[p.popsize];
-
-        for (int i = 0; i < p.popsize; i++) {
-            if (i % 64 == 0) {
-                System.out.println("PreGen " + i * 100 / p.popsize + "%");
-            }
-            population[i] = DSolution.getRand(problem, true, p.seedRange, p.goal);
-        }
-
-        Arrays.sort(population);
-        int bestever = Integer.MAX_VALUE;
-        int i = 0;
-        long startTime = System.currentTimeMillis();
-        while (true) {
-
-            if (i > 2 && i % p.resetTrigger == 0) {
-                resets++;
-                for (int j = 1; j < population.length; j++) {
-                    population[j] = mutate(population[0]);
-                    int whileGuard = 0;
-                    while (solutionWithin(Arrays.copyOfRange(population, 0, j), population[j])) {
-                        mutateMe(population[j]);
-                        if (whileGuard > 4092) {
-                            return new GenAlgResult("stall", bestever, i,System.currentTimeMillis() - startTime);
-                        }
-                        whileGuard++;
-                    }
-                }
-            }
-            long GenStartTime = System.currentTimeMillis();
-
-            DSolution[] newChilderen = Pair(population, 0);
-            DSolution[] newPop = new DSolution[population.length + newChilderen.length];
-            System.arraycopy(population, 0, newPop, 0, population.length);
-            System.arraycopy(newChilderen, 0, newPop, population.length, newChilderen.length);
-            Arrays.sort(newPop);
-            System.arraycopy(newPop, 0, population, 0, population.length);
-            RemoveDupes(population);
-
-            generationTimeAverage[gtai++] = System.currentTimeMillis() - GenStartTime;
-            if (gtai >= generationTimeAverage.length) {
-                gtai = 0;
-            }
-
-            int ob = best;
-            best = population[0].Score(false);
-            bestever = Math.min(bestever, best);
-
-            if (bestever <= p.goal) {
-                System.out.print("BEST SOLUTION FOUND! Generation: " + i);
-                return new GenAlgResult("done", bestever, i, System.currentTimeMillis() - startTime);
-            }
-
-            if (ob != best || i % 10 == 0) {
-                int avg = 0, avg50 = 0, avg25 = 0, avg10 = 0;
-                for (int j = 0; j < population.length; j++) {
-                    if (j < Math.floor(population.length * 0.1)) {
-                        avg10 += population[j].Score(false);
-                    }
-                    if (j < Math.floor(population.length * 0.25)) {
-                        avg25 += population[j].Score(false);
-                    }
-                    if (j < Math.floor(population.length * 0.5)) {
-                        avg50 += population[j].Score(false);
-                    }
-                    avg += population[j].Score(false);
-                }
-                avg /= population.length;
-                avg50 /= (population.length * 0.5);
-                avg25 /= (population.length * 0.25);
-                avg10 /= (population.length * 0.1);
-
-                improvement = avg10 - prevavg10;
-                divergence = avg - prevavg;
-                prevavg10 = avg10;
-                prevavg = avg;
-                divergenceAverage[dai++] = divergence;
-                if (dai >= divergenceAverage.length) {
-                    dai = 0;
-                }
-                int da = 0;
-                for (int d : divergenceAverage) {
-                    da += d;
-                }
-                da /= divergenceAverage.length;
-                long gta = 0;
-                for (long d : generationTimeAverage) {
-                    gta += d;
-                }
-                gta /= generationTimeAverage.length;
-                //evaluate ending
-                if ((improvement == 0 && da == 0 && i > 10) || (i > p.maxGen) || (System.currentTimeMillis() - startTime) > p.maxTime) {
-                    return new GenAlgResult("stall", bestever, i,System.currentTimeMillis() - startTime);
-                }
-                System.out.print("Run: " + i + " BestEver: " + bestever + " Top:" + best + " avg10:" + avg10 + " avg25:" + avg25 + " avg50:" + avg50 + " avg:" + avg);
-                System.out.print(" improvement: " + improvement + "\tdivergence:" + divergence + "\tdivavg:" + da + "\tresets:" + resets + "\tGenTime:" + gta);
-                System.out.println();
-                i++;
+    public DSolution getBestMutant(DSolution d, int runs) {
+        DSolution m = mutate(d);
+        //m.MakeFeasible();
+        m.Score(true);
+        for (int i = 0; i < runs; i++) {
+            DSolution mm = mutate(d);
+            //   mm.MakeFeasible();
+            if (mm.Score(true) < m.Score(false)) {
+                m = mm;
             }
         }
-        //return new GenAlgResult("stall",bestever,0);
+        return m;
     }
 
     public void LiangGaoCrossover(DSolution s1, DSolution s2) {
@@ -463,7 +451,7 @@ public class GeneticAlgorithm {
             final int end = Math.max(number1, number2);
 
             // crossover the section in between the start and end indices
-            swap(tour1, tour2, start, end);
+            util.swap(tour1, tour2, start, end);
 
             // get a view of the crossover over sections in each tour
             final List<Integer> swappedSectionInTour1 = tour1.subList(start, end);
