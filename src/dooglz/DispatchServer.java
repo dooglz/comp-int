@@ -2,6 +2,7 @@ package dooglz;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpServer;
 import com.sun.org.glassfish.external.probe.provider.annotations.ProbeListener;
@@ -116,6 +117,10 @@ public class DispatchServer {
         return wo;
     }
 
+    private void parseResponce(workResponce wr){
+
+    }
+
     public DispatchServer() throws IOException {
         rd = loadFromFile();
         if(rd == null){
@@ -157,6 +162,7 @@ public class DispatchServer {
                         final Map<String, List<String>> requestParameters = getRequestParameters(he.getRequestURI());
                         // do something with the request parameters
                         //final String responseBody = "['hello world!',"+requestParameters+"]";
+
                         Gson gson = new Gson();
                         workOrder wo  = getNextJob();
                         System.out.println("Dispatching Job: "+wo.dispatchID+" _ "+wo.params.problemID);
@@ -165,6 +171,57 @@ public class DispatchServer {
                         final byte[] rawResponseBody = responseBody.getBytes(CHARSET);
                         he.sendResponseHeaders(STATUS_OK, rawResponseBody.length);
                         he.getResponseBody().write(rawResponseBody);
+                        break;
+                    case METHOD_OPTIONS:
+                        headers.set(HEADER_ALLOW, ALLOWED_METHODS);
+                        he.sendResponseHeaders(STATUS_OK, NO_RESPONSE_LENGTH);
+                        break;
+                    default:
+                        headers.set(HEADER_ALLOW, ALLOWED_METHODS);
+                        he.sendResponseHeaders(STATUS_METHOD_NOT_ALLOWED, NO_RESPONSE_LENGTH);
+                        break;
+                }
+            } finally {
+                he.close();
+            }
+        });
+        server.createContext("/submit", he -> {
+            try {
+                final Headers headers = he.getResponseHeaders();
+                final String requestMethod = he.getRequestMethod().toUpperCase();
+                switch (requestMethod) {
+                    case METHOD_GET:
+                        final Map<String, List<String>> requestParameters = getRequestParameters(he.getRequestURI());
+                        System.out.println("data Received: "+requestParameters);
+                        boolean good =false;
+                        if(requestParameters.get("data").get(0) != null){
+                            Gson gson = new Gson();
+                            try {
+                                workResponce wr = gson.fromJson(requestParameters.get("data").get(0), workResponce.class);
+                                parseResponce(wr);
+                                good =true;
+                            }catch (JsonSyntaxException e){
+                                System.out.println(e.getMessage()+" 123");
+                                good = false;
+                            }
+                        }
+
+                        if(good){
+                            final String response = "cheers bro";
+                            final byte[] rawResponseBody = response.getBytes(CHARSET);
+                            headers.set(HEADER_CONTENT_TYPE, String.format("application/text; charset=%s", CHARSET));
+                            he.sendResponseHeaders(204, rawResponseBody.length);
+                        }else{
+                            final String response = "I can't Parse this!";
+                            final byte[] rawResponseBody = response.getBytes(CHARSET);
+                            headers.set(HEADER_CONTENT_TYPE, String.format("application/text; charset=%s", CHARSET));
+                            he.sendResponseHeaders(400, rawResponseBody.length);
+                        }
+                       // final String response = "cheers bro";
+                        //headers.set(HEADER_CONTENT_TYPE, String.format("application/text; charset=%s", CHARSET));
+                       // final byte[] rawResponseBody = response.getBytes(CHARSET);
+                        //he.sendResponseHeaders(STATUS_OK, rawResponseBody.length);
+                        //he.getResponseBody().write(rawResponseBody);
                         break;
                     case METHOD_OPTIONS:
                         headers.set(HEADER_ALLOW, ALLOWED_METHODS);
