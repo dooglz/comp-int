@@ -1,10 +1,6 @@
 package dooglz;
 
 import modelP.Job;
-import modelP.Machine;
-import modelP.Operation;
-import modelP.Problem;
-
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;

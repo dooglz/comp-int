@@ -1,12 +1,6 @@
 package dooglz;
 
-import static dooglz.Constants.*;
-
 import java.io.IOException;
-
-import modelP.JSSP;
-
-import static dooglz.Constants.MAIN_POP_SIZE;
 
 public class Main {
     public static void main(String[] args) throws InterruptedException, IOException {

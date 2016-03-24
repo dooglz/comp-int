@@ -1,7 +1,5 @@
 package dooglz;
 
-import modelP.Job;
-
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -31,7 +29,7 @@ public class DJob implements Comparator<DJob>, Comparable<DJob> {
 
         int ods = 0;
         for (int i = 0; i < opcount; i++) {
-            ops[i] = new DOperation(macs, this, this.pops[i],i);
+            ops[i] = new DOperation(macs, this, this.pops[i], i);
             ods += ops[i].duration;
         }
 

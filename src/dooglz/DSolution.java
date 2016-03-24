@@ -2,8 +2,6 @@ package dooglz;
 
 import modelP.JSSP;
 
-import java.io.Console;
-import java.security.spec.DSAGenParameterSpec;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;

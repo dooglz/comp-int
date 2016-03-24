@@ -1,14 +1,8 @@
 package dooglz;
 
-import dooglz.DJSSP;
-import modelP.*;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 
 public class SolutionGenerator {
     public static int machinecount;

@@ -1,10 +1,6 @@
 package dooglz;
 
-import modelP.Job;
-import modelP.Operation;
-
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 
 public class DOperation {
     final DMachine machine;
