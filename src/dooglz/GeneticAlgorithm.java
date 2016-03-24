@@ -1,27 +1,24 @@
 package dooglz;
 
+import modelP.JSSP;
+
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import static dooglz.Constants.MAIN_POP_SIZE;
 import static dooglz.util.*;
 
 
 public class GeneticAlgorithm {
-    public static int seedRange = 32;
-    public static int tournamentSampleSize = 128;
-    public static int tournamentNewChilderenCount = 10;
-    public static int tournamentMutateRange = 128;
-    public static int resetTrigger = 200;
-    public static int goal = 55;
-    private static int machinecount;
-    private static int jobcount;
+    public GenAlgParams p;
+    public DProblem problem;
+    private int machinecount;
+    private int jobcount;
 
-
-    public GeneticAlgorithm(int machinecount, int jobcount) {
-        GeneticAlgorithm.machinecount = machinecount;
-        GeneticAlgorithm.jobcount = jobcount;
+    public GeneticAlgorithm(GenAlgParams params) {
+        this.p = params;
+        this.problem = new DProblem(JSSP.getProblem(params.problemID));
+        this.machinecount = problem.machineCount;
+        this.jobcount = problem.jobCount;
     }
 
     public <E, L extends List<E>> void swap(final L list1, final L list2,
@@ -46,11 +43,25 @@ public class GeneticAlgorithm {
     }
 
     public void Crossover(DSolution a, DSolution b) {
-        //PMXCrossover(a, b);
-        //SPCrossover(a, b);
-        //MPCrossover(a, b);
-        //RenQingCrossover(a,b);
-        LiangGaoCrossover(a, b);
+        switch (p.crossovermode){
+            case 1:
+                SPCrossover(a, b);
+                break;
+            case 2:
+                MPCrossover(a, b);
+                break;
+            case 3:
+                PMXCrossover(a, b);
+                break;
+            case 4:
+                RenQingCrossover(a,b);
+                break;
+            case 5:
+                LiangGaoCrossover(a, b);
+                break;
+            default:
+                break;
+        }
     }
 
     public DSolution[] CeiliPair(final DSolution[] oldPop) {
@@ -59,8 +70,8 @@ public class GeneticAlgorithm {
             //  System.out.print("Pairing ");
             for (int j = i; j < oldPop.length - i; j++) {
                 //   System.out.print(" " + i + "&" + j);
-                DSolution newSol1 = new DSolution(machinecount, jobcount);
-                DSolution newSol2 = new DSolution(machinecount, jobcount);
+                DSolution newSol1 = new DSolution(problem, machinecount, jobcount);
+                DSolution newSol2 = new DSolution(problem, machinecount, jobcount);
                 newSol1.sol = cpy2D(oldPop[i].sol);
                 newSol2.sol = cpy2D(oldPop[j].sol);
                 newSol1.age = Math.max(oldPop[i].age, oldPop[j].age);
@@ -100,7 +111,7 @@ public class GeneticAlgorithm {
     }
 
     public DSolution[] TournamentPair(final DSolution[] oldPop, int offset) {
-        DSolution[] rndSolutions = new DSolution[tournamentSampleSize];
+        DSolution[] rndSolutions = new DSolution[p.tournamentSampleSize];
         //pick  N random solutions from old pop
         ArrayList<Integer> is = new ArrayList<>();
         for (int i = 0; i < rndSolutions.length; i++) {
@@ -117,10 +128,10 @@ public class GeneticAlgorithm {
             rndSolutions[i] = oldPop[r];
         }
         Arrays.sort(rndSolutions);
-        DSolution[] newChilderen = new DSolution[tournamentNewChilderenCount];
+        DSolution[] newChilderen = new DSolution[p.tournamentNewChilderenCount];
         for (int i = 0; i < newChilderen.length; i++) {
-            DSolution a = new DSolution(machinecount, jobcount);
-            DSolution b = new DSolution(machinecount, jobcount);
+            DSolution a = new DSolution(problem, machinecount, jobcount);
+            DSolution b = new DSolution(problem, machinecount, jobcount);
             a.sol = cpy2D(rndSolutions[i * 2].sol);
             b.sol = cpy2D(rndSolutions[(i * 2) + 1].sol);
             a.age = Math.max(rndSolutions[i * 2].age, rndSolutions[(i * 2) + 1].age);
@@ -136,9 +147,9 @@ public class GeneticAlgorithm {
         for (int i = 0; i < newChilderen.length; i++) {
             //ImproveMe(newChilderen[i], 64);
 
-            newChilderen[i] = getBestMutant(newChilderen[i], tournamentMutateRange);
+            newChilderen[i] = getBestMutant(newChilderen[i], p.tournamentMutateRange);
             if (solutionWithin(oldPop, newChilderen[i])) {
-                newChilderen[i] = DSolution.getRand(false, 20, goal);
+                newChilderen[i] = DSolution.getRand(problem, false, 20, p.goal);
             }
 
         }
@@ -150,8 +161,8 @@ public class GeneticAlgorithm {
         ArrayList<DSolution> newSolutions = new ArrayList<>();
         for (int i = 0; i < oldPop.length - 1; i++) {
             //   System.out.print(" " + i + "&" + j);
-            DSolution newSol1 = new DSolution(machinecount, jobcount);
-            DSolution newSol2 = new DSolution(machinecount, jobcount);
+            DSolution newSol1 = new DSolution(problem, machinecount, jobcount);
+            DSolution newSol2 = new DSolution(problem, machinecount, jobcount);
             int a = (int) Math.floor(Math.random() * (double) (oldPop.length));
             int b = a;
             while (b == a) {
@@ -180,14 +191,14 @@ public class GeneticAlgorithm {
         return false;
     }
 
-    public void RemoveDupes(DSolution[] p) {
-        for (int i = 0; i < p.length - 1; i++) {
-            for (int j = i + 1; j < p.length - 1; j++) {
-                if (!DSolution.isEqual(p[i], p[j])) {
+    public void RemoveDupes(DSolution[] s) {
+        for (int i = 0; i < s.length - 1; i++) {
+            for (int j = i + 1; j < s.length - 1; j++) {
+                if (!DSolution.isEqual(s[i], s[j])) {
                     continue;
                 }
                 System.out.println(i + " is dupe! " + j);
-                p[i] = DSolution.getRand(true, 64, goal);
+                s[i] = DSolution.getRand(problem, true, 64, p.goal);
             }
         }
     }
@@ -206,7 +217,7 @@ public class GeneticAlgorithm {
     }
 
     public DSolution mutate(DSolution s) {
-        DSolution newSol = new DSolution(machinecount, jobcount);
+        DSolution newSol = new DSolution(problem, machinecount, jobcount);
         for (int i = 0; i < machinecount; i++) {
             System.arraycopy(s.sol[i], 0, newSol.sol[i], 0, jobcount);
         }
@@ -214,7 +225,7 @@ public class GeneticAlgorithm {
         return newSol;
     }
 
-    public GenAlgResult Start(DSolution[] population, DProblem problem, int runs) {
+    public GenAlgResult Start() {
         int prevavg = 0;
         int prevavg10 = 0;
         int improvement;
@@ -225,12 +236,13 @@ public class GeneticAlgorithm {
         long[] generationTimeAverage = new long[10];
         int dai = 0;
         int gtai = 0;
+        DSolution population[] = new DSolution[p.popsize];
 
-        for (int i = 0; i < MAIN_POP_SIZE; i++) {
+        for (int i = 0; i < p.popsize; i++) {
             if (i % 64 == 0) {
-                System.out.println("PreGen " + i * 100 / MAIN_POP_SIZE + "%");
+                System.out.println("PreGen " + i * 100 / p.popsize + "%");
             }
-            population[i] = DSolution.getRand(true, seedRange, goal);
+            population[i] = DSolution.getRand(problem, true, p.seedRange, p.goal);
         }
 
         Arrays.sort(population);
@@ -239,7 +251,7 @@ public class GeneticAlgorithm {
         long startTime = System.currentTimeMillis();
         while (true) {
 
-            if (i > 2 && i % resetTrigger == 0) {
+            if (i > 2 && i % p.resetTrigger == 0) {
                 resets++;
                 for (int j = 1; j < population.length; j++) {
                     population[j] = mutate(population[0]);
@@ -272,7 +284,7 @@ public class GeneticAlgorithm {
             best = population[0].Score(false);
             bestever = Math.min(bestever, best);
 
-            if (bestever <= goal) {
+            if (bestever <= p.goal) {
                 System.out.print("BEST SOLUTION FOUND! Generation: " + i);
                 return new GenAlgResult("done", bestever, i, System.currentTimeMillis() - startTime);
             }
@@ -315,7 +327,7 @@ public class GeneticAlgorithm {
                 }
                 gta /= generationTimeAverage.length;
                 //evaluate ending
-                if ((improvement == 0 && da == 0 && i > 10) || (i > 20000) || (System.currentTimeMillis() - startTime) > 600000) {
+                if ((improvement == 0 && da == 0 && i > 10) || (i > p.maxGen) || (System.currentTimeMillis() - startTime) > p.maxTime) {
                     return new GenAlgResult("stall", bestever, i,System.currentTimeMillis() - startTime);
                 }
                 System.out.print("Run: " + i + " BestEver: " + bestever + " Top:" + best + " avg10:" + avg10 + " avg25:" + avg25 + " avg50:" + avg50 + " avg:" + avg);

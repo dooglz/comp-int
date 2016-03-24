@@ -11,14 +11,17 @@ import java.util.stream.IntStream;
 public class DSolution implements Comparator<DSolution>, Comparable<DSolution> {
     public int[][] sol;
     public int age;
+    public DProblem prob;
     private int score_;
 
-    public DSolution(int machinecount, int jobcount) {
+    public DSolution(DProblem prob, int machinecount, int jobcount) {
+        this.prob = prob;
         this.sol = new int[machinecount][jobcount];
         this.score_ = -1;
     }
 
-    public DSolution(int[][] sol, int machinecount, int jobcount) {
+    public DSolution(DProblem prob, int[][] sol, int machinecount, int jobcount) {
+        this.prob = prob;
         if (sol.length != machinecount || sol[0].length != jobcount) {
             throw new IllegalArgumentException();
         }
@@ -45,7 +48,7 @@ public class DSolution implements Comparator<DSolution>, Comparable<DSolution> {
         if (this.score_ != -1 && !recalc) {
             return this.score_;
         } else {
-            this.score_ = JSSP.getFitness(this.sol, Main.problem.pProblem);
+            this.score_ = JSSP.getFitness(this.sol, prob.pProblem);
         }
         return this.score_;
     }
@@ -78,8 +81,8 @@ public class DSolution implements Comparator<DSolution>, Comparable<DSolution> {
         //replace missing jobs back on the list, the job with the
         //lowest operation ID on this machine gets priority
         Collections.sort(missingFrom, (left, right) -> {
-            int op1 = Main.problem.jobs[left].GetOperationOnMachine(Main.problem.machines[m]).id;
-            int op2 = Main.problem.jobs[right].GetOperationOnMachine(Main.problem.machines[m]).id;
+            int op1 = prob.jobs[left].GetOperationOnMachine(prob.machines[m]).id;
+            int op2 = prob.jobs[right].GetOperationOnMachine(prob.machines[m]).id;
             return op1 - op2;
         });
         for (int i = 0; i < missingFrom.size(); i++) {
@@ -87,13 +90,13 @@ public class DSolution implements Comparator<DSolution>, Comparable<DSolution> {
         }
     }
 
-    static DSolution getRand(boolean optimised, int searchspace, int goal){
+    static DSolution getRand(DProblem prob, boolean optimised, int searchspace, int goal){
         if(searchspace < 1){
             searchspace = 1;
         }
         DSolution ss[] = new DSolution[searchspace];
         for (int i = 0; i < searchspace; i++) {
-            ss[i] = new DSolution(JSSP.getRandomSolution(Main.problem.pProblem),Main.problem.machineCount, Main.problem.jobCount);
+            ss[i] = new DSolution(prob, JSSP.getRandomSolution(prob.pProblem),prob.machineCount, prob.jobCount);
             if(optimised){ss[i].MakeFeasible();}
             if(ss[i].Score(true) <= goal){System.out.println("yolo");return ss[i];}
         }
@@ -105,7 +108,7 @@ public class DSolution implements Comparator<DSolution>, Comparable<DSolution> {
         for (int m = 0; m < this.sol.length; m++) {
             int lastop = -1;
             for (int j = 0; j < this.sol[m].length; j++) {
-                final int op = Main.problem.jobs[j].GetOperationOnMachine(Main.problem.machines[m]).id;
+                final int op = prob.jobs[j].GetOperationOnMachine(prob.machines[m]).id;
                 if (op < lastop){
                     System.out.println("false");
                     return false;
@@ -166,13 +169,13 @@ public class DSolution implements Comparator<DSolution>, Comparable<DSolution> {
                         job = solcpy[m][i + searchahead];
                     }
                     //what operation is that
-                    final int op = Main.problem.jobs[job].GetOperationOnMachine(Main.problem.machines[m]).id;
+                    final int op = prob.jobs[job].GetOperationOnMachine(prob.machines[m]).id;
                     boolean happy = false;
                     if (op == 0 || i == solcpy[0].length - 1) { //TODO check that range
                         happy = true;
                     } else {
                         //has the op before this been scheduled, in this batch?
-                        final int machineForPreviousOP = Main.problem.jobs[job].ops[op - 1].machine.id;
+                        final int machineForPreviousOP = prob.jobs[job].ops[op - 1].machine.id;
                         if (solcpy[machineForPreviousOP][i] == job) {
                             happy = true;
                         } else {

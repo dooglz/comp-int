@@ -5,19 +5,11 @@ import modelP.JSSP;
 import static dooglz.Constants.MAIN_POP_SIZE;
 
 public class Main {
-    public static DProblem problem;
-    public static DSolution population[];
     public static void main(String[] args) throws InterruptedException, IOException {
-        modelP.Problem mpp = JSSP.getProblem(PROBLEM_ID);
-        problem = new DProblem(mpp);
-        SolutionGenerator sg = new SolutionGenerator(problem.machineCount,problem.jobCount);
-        GeneticAlgorithm ga = new GeneticAlgorithm(problem.machineCount,problem.jobCount);
 
-        population = new DSolution[MAIN_POP_SIZE];
-        System.out.println("Problem "+PROBLEM_ID+" Lb:"+problem.lb+" popsize: "+MAIN_POP_SIZE);
-        DSolution t = new DSolution(JSSP.getRandomSolution(mpp), problem.machineCount, problem.jobCount);
-
-        GenAlgResult res =  ga.Start(population,problem,10512);
-        System.out.println(res.result+"\t Score:"+res.bestScore+"\t Gen: "+res.generation+"\t Time: "+res.runtime);
+        GenAlgParams params = new GenAlgParams(32,128,10,128,200,55,1024,5,86,3000,600000);
+        GeneticAlgorithm ga = new GeneticAlgorithm(params);
+        GenAlgResult res = ga.Start();
+        System.out.println("\n########\n"+res.result+"\t Score:"+res.bestScore+"\t Gen: "+res.generation+"\t Time: "+res.runtime);
     }
 }

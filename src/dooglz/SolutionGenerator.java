@@ -19,7 +19,7 @@ public class SolutionGenerator {
     }
 
     public DSolution RndGenByOpId(DProblem p, float randomness) {
-        DSolution newSol = new DSolution(machinecount,jobcount);
+        DSolution newSol = new DSolution(p, machinecount,jobcount);
         for (int m = 0; m < machinecount; m++) {
             ArrayList<Integer> jobs = new ArrayList<>();
             for (int j = 0; j < jobcount; j++) {
@@ -27,8 +27,8 @@ public class SolutionGenerator {
             }
             final int mm =m;
             Collections.sort(jobs, (left, right) -> {
-                int op1 = Main.problem.jobs[left].GetOperationOnMachine(Main.problem.machines[mm]).id;
-                int op2 = Main.problem.jobs[right].GetOperationOnMachine(Main.problem.machines[mm]).id;
+                int op1 = p.jobs[left].GetOperationOnMachine(p.machines[mm]).id;
+                int op2 = p.jobs[right].GetOperationOnMachine(p.machines[mm]).id;
                 return op1 - op2;
             });
             Collections.rotate(jobs,(int)Math.floor((-5.0 * randomness * Math.random())));
@@ -40,7 +40,7 @@ public class SolutionGenerator {
     }
 
     public DSolution RndGenByTime(DProblem p, float randomness, int rotate) {
-        DSolution solutionArray = new DSolution(machinecount,jobcount);
+        DSolution solutionArray = new DSolution(p,machinecount,jobcount);
 
         for (int i = 0; i < machinecount; i++) {
             for (int j = 0; j < jobcount; j++) {
