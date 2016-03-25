@@ -18,7 +18,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-class ProblemRun{
+class ProblemRun {
     public long disaptchID;
     public int disaptchTime;
     public int returnTime;
@@ -26,7 +26,7 @@ class ProblemRun{
     public GenAlgParams params;
 }
 
-class problemStat{
+class problemStat {
     public int id;
     public int lb;
     public int bestScore;
@@ -36,7 +36,7 @@ class problemStat{
     public ArrayList<ProblemRun> runs;
 }
 
-class runData{
+class runData {
     public long lastUpdateTime;
     public long version;
     public problemStat[] problems;
@@ -55,38 +55,40 @@ public class DispatchServer {
     private static final int STATUS_METHOD_NOT_ALLOWED = 405;
     private static final int NO_RESPONSE_LENGTH = -1;
     private static final String METHOD_GET = "GET";
+    private static final String METHOD_POST = "POST";
     private static final String METHOD_OPTIONS = "OPTIONS";
     private static final String ALLOWED_METHODS = METHOD_GET + "," + METHOD_OPTIONS;
     private HttpServer server;
     private runData rd;
 
-    public void Start(){
+    public void Start() {
         server.start();
     }
-    public void Stop(){
+
+    public void Stop() {
         server.stop(0);
     }
 
-    private synchronized GenAlgParams getNewRunFromProblemStat(problemStat ps){
+    private synchronized GenAlgParams getNewRunFromProblemStat(problemStat ps) {
         GenAlgParams p = new GenAlgParams();
         p.goal = ps.lb;
         p.problemID = ps.id;
-        if(ps.runs.size() == 0){
+        if (ps.runs.size() == 0) {
             p.maxGen = 200;
             p.tournamentNewChilderenCount = 4;
             p.tournamentSampleSize = 32;
-            p.crossovermode =5;
+            p.crossovermode = 5;
             p.maxTime = 400000;
             p.popsize = 128;
             p.seedRange = 32;
             p.resetTrigger = 300;
             p.tournamentMutateRange = 128;
             return p;
-        }else{
+        } else {
             p.maxGen = 200 + (ps.runs.size() * 50);
             p.tournamentNewChilderenCount = 4;
             p.tournamentSampleSize = 32;
-            p.crossovermode =5;
+            p.crossovermode = 5;
             p.maxTime = 400000;
             p.popsize = 128 + (ps.runs.size() * 50);
             p.seedRange = 32;
@@ -96,13 +98,13 @@ public class DispatchServer {
         }
     }
 
-    private synchronized workOrder getNextJob(){
+    private synchronized workOrder getNextJob() {
         workOrder wo = new workOrder();
         ProblemRun pr = new ProblemRun();
-        wo.dispatchID = (long)(Math.random()*((double)Long.MAX_VALUE));
+        wo.dispatchID = (long) (Math.random() * ((double) Long.MAX_VALUE));
         //search for any Problem stat with 0 runs.
-        for (problemStat ps: rd.problems){
-            if(ps.runs.size() ==0){
+        for (problemStat ps : rd.problems) {
+            if (ps.runs.size() == 0) {
                 wo.params = getNewRunFromProblemStat(ps);
                 pr.params = wo.params;
                 pr.disaptchID = wo.dispatchID;
@@ -117,35 +119,35 @@ public class DispatchServer {
         return wo;
     }
 
-    private void parseResponce(workResponce wr){
-
+    private void parseResponce(workResponce wr) {
+        System.out.println("parsing new WR "+wr.dispatchID);
     }
 
     public DispatchServer() throws IOException {
         rd = loadFromFile();
-        if(rd == null){
+        if (rd == null) {
             System.out.println("Sttarting new runData");
             rd = new runData();
             ArrayList<problemStat> psa = new ArrayList<>();
-            for (int i = 0; i <150; i++) {
+            for (int i = 0; i < 150; i++) {
                 Problem p = JSSP.getProblem(i);
-                if(p != null){
+                if (p != null) {
                     problemStat ps = new problemStat();
                     ps.id = i;
                     ps.lb = p.getLowerBound();
                     ps.bestGen = -1;
-                    ps.bestScore  =-1;
+                    ps.bestScore = -1;
                     ps.completeRuns = 0;
-                    ps.stalledRuns =0 ;
+                    ps.stalledRuns = 0;
                     ps.runs = new ArrayList<>();
                     psa.add(ps);
                 }
             }
             rd.problems = psa.toArray(new problemStat[psa.size()]);
-            rd.version =0;
+            rd.version = 0;
             rd.lastUpdateTime = System.currentTimeMillis();
-        }else{
-            System.out.println("loaded Rd file: "+rd.version);
+        } else {
+            System.out.println("loaded Rd file: " + rd.version);
         }
         //update file
         rd.lastUpdateTime = System.currentTimeMillis();
@@ -164,8 +166,8 @@ public class DispatchServer {
                         //final String responseBody = "['hello world!',"+requestParameters+"]";
 
                         Gson gson = new Gson();
-                        workOrder wo  = getNextJob();
-                        System.out.println("Dispatching Job: "+wo.dispatchID+" _ "+wo.params.problemID);
+                        workOrder wo = getNextJob();
+                        System.out.println("Dispatching Job: " + wo.dispatchID + " _ " + wo.params.problemID);
                         final String responseBody = gson.toJson(wo);
                         headers.set(HEADER_CONTENT_TYPE, String.format("application/json; charset=%s", CHARSET));
                         final byte[] rawResponseBody = responseBody.getBytes(CHARSET);
@@ -186,59 +188,62 @@ public class DispatchServer {
             }
         });
         server.createContext("/submit", he -> {
+            boolean good = false;
+            workResponce wr = null;
             try {
                 final Headers headers = he.getResponseHeaders();
                 final String requestMethod = he.getRequestMethod().toUpperCase();
                 switch (requestMethod) {
-                    case METHOD_GET:
-                        final Map<String, List<String>> requestParameters = getRequestParameters(he.getRequestURI());
-                        System.out.println("data Received: "+requestParameters);
-                        boolean good =false;
-                        if(requestParameters.get("data").get(0) != null){
+                    case METHOD_POST:
+                        final Map<String, String> postData =  getPostData(he.getRequestBody());
+                        System.out.println("data Received from: " + he.getRemoteAddress());
+
+                        if (postData.get("data") != null) {
                             Gson gson = new Gson();
                             try {
-                                workResponce wr = gson.fromJson(requestParameters.get("data").get(0), workResponce.class);
-                                parseResponce(wr);
-                                good =true;
-                            }catch (JsonSyntaxException e){
-                                System.out.println(e.getMessage()+" 123");
+                                wr  = gson.fromJson(postData.get("data"), workResponce.class);
+
+                                good = true;
+                            } catch (JsonSyntaxException e) {
+                                System.out.println(e.getMessage() + " gson parse error");
                                 good = false;
                             }
                         }
 
-                        if(good){
+                        if (good) {
                             final String response = "cheers bro";
                             final byte[] rawResponseBody = response.getBytes(CHARSET);
-                            headers.set(HEADER_CONTENT_TYPE, String.format("application/text; charset=%s", CHARSET));
-                            he.sendResponseHeaders(204, rawResponseBody.length);
-                        }else{
+                            headers.set(HEADER_CONTENT_TYPE, String.format("text/html;  charset=%s", CHARSET));
+                            he.sendResponseHeaders(200, rawResponseBody.length);
+                            he.getResponseBody().write(rawResponseBody);
+                        } else {
                             final String response = "I can't Parse this!";
                             final byte[] rawResponseBody = response.getBytes(CHARSET);
-                            headers.set(HEADER_CONTENT_TYPE, String.format("application/text; charset=%s", CHARSET));
+                            headers.set(HEADER_CONTENT_TYPE, String.format("text/html; charset=%s", CHARSET));
                             he.sendResponseHeaders(400, rawResponseBody.length);
+                            he.getResponseBody().write(rawResponseBody);
                         }
-                       // final String response = "cheers bro";
-                        //headers.set(HEADER_CONTENT_TYPE, String.format("application/text; charset=%s", CHARSET));
-                       // final byte[] rawResponseBody = response.getBytes(CHARSET);
-                        //he.sendResponseHeaders(STATUS_OK, rawResponseBody.length);
-                        //he.getResponseBody().write(rawResponseBody);
                         break;
                     case METHOD_OPTIONS:
-                        headers.set(HEADER_ALLOW, ALLOWED_METHODS);
+                        headers.set(HEADER_ALLOW, METHOD_POST + "," + METHOD_OPTIONS);
                         he.sendResponseHeaders(STATUS_OK, NO_RESPONSE_LENGTH);
                         break;
                     default:
-                        headers.set(HEADER_ALLOW, ALLOWED_METHODS);
+                        headers.set(HEADER_ALLOW, METHOD_POST + "," + METHOD_OPTIONS);
                         he.sendResponseHeaders(STATUS_METHOD_NOT_ALLOWED, NO_RESPONSE_LENGTH);
                         break;
                 }
             } finally {
                 he.close();
+                if(good){
+                    parseResponce(wr);
+                }
             }
+
         });
     }
 
-    private static runData loadFromFile(){
+    private static runData loadFromFile() {
         try {
             File myFile = new File("myjsonstuff.json");
             FileInputStream fIn = new FileInputStream(myFile);
@@ -252,22 +257,47 @@ public class DispatchServer {
             String json = sb.toString();
             Gson gson = new Gson();
             return gson.fromJson(json, runData.class);
-        }catch(FileNotFoundException e){
+        } catch (FileNotFoundException e) {
             return null;
-        }catch(IOException e){
+        } catch (IOException e) {
             return null;
         }
     }
 
-    private static void saveTofile(runData d){
+    private static void saveTofile(runData d) {
         try {
             Writer writer = new FileWriter("myjsonstuff.json");
             Gson gson = new GsonBuilder().create();
             gson.toJson(d, writer);
             writer.close();
-        }catch (IOException e){
-            System.out.print("save error: "+e.getMessage());
+        } catch (IOException e) {
+            System.out.print("save error: " + e.getMessage());
         }
+    }
+
+    private static  Map<String, String> getPostData(InputStream is) {
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            //StringBuilder out = new StringBuilder();
+            String line;
+            ArrayList<String> st = new ArrayList<>();
+            while ((line = reader.readLine()) != null) {
+                if (line != null && !line.isEmpty()) {
+                    st.add(line);
+                }
+            }
+            reader.close();
+            Map<String, String> params = new LinkedHashMap<String, String>();
+            for (int i = 0; i < st.size(); i++) {
+                if (st.get(i).startsWith("Content-Disposition: form-data; name=")) {
+                    params.putIfAbsent(st.get(i).substring(38,st.get(i).length()-1), st.get(i + 1));
+                }
+            }
+            return params;
+        } catch (IOException e) {
+
+        }
+        return new LinkedHashMap<String, String>();
     }
 
 
