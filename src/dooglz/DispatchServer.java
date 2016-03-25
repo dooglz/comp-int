@@ -109,6 +109,10 @@ public class DispatchServer {
                 pr.params = wo.params;
                 pr.disaptchID = wo.dispatchID;
                 ps.runs.add(pr);
+                //update file
+                rd.lastUpdateTime = System.currentTimeMillis();
+                rd.version++;
+                saveTofile(rd);
                 return wo;
             }
         }
@@ -184,7 +188,7 @@ public class DispatchServer {
         rd.version++;
         saveTofile(rd);
 
-        server = HttpServer.create(new InetSocketAddress(HOSTNAME, PORT), BACKLOG);
+        server = HttpServer.create(new InetSocketAddress(Main.ip, PORT), BACKLOG);
         server.createContext("/req", he -> {
             try {
                 final Headers headers = he.getResponseHeaders();
@@ -197,7 +201,7 @@ public class DispatchServer {
 
                         Gson gson = new Gson();
                         workOrder wo = getNextJob();
-                        System.out.println("Dispatching Job: " + wo.dispatchID + " _ " + wo.params.problemID);
+                        System.out.println("Dispatching Job: " + wo.dispatchID + " _ " + wo.params.problemID +" _ "+he.getRemoteAddress());
                         final String responseBody = gson.toJson(wo);
                         headers.set(HEADER_CONTENT_TYPE, String.format("application/json; charset=%s", CHARSET));
                         final byte[] rawResponseBody = responseBody.getBytes(CHARSET);
