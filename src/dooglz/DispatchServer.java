@@ -20,8 +20,8 @@ import java.util.*;
 
 class ProblemRun {
     public long disaptchID;
-    public int disaptchTime;
-    public int returnTime;
+    public long disaptchTime;
+    public long returnTime;
     public GenAlgResult result;
     public GenAlgParams params;
 }
@@ -115,12 +115,32 @@ public class DispatchServer {
         wo.params = getNewRunFromProblemStat(rd.problems[0]);
         pr.params = wo.params;
         pr.disaptchID = wo.dispatchID;
+        pr.disaptchTime = System.currentTimeMillis();
         rd.problems[0].runs.add(pr);
         return wo;
     }
 
-    private void parseResponce(workResponce wr) {
-        System.out.println("parsing new WR "+wr.dispatchID);
+    private synchronized void parseResponce(workResponce wr) {
+        //System.out.println("parsing new WR " + wr.dispatchID);
+        for (problemStat ps : rd.problems) {
+            for (ProblemRun pr : ps.runs) {
+                if (pr.disaptchID == wr.dispatchID) {
+                    pr.returnTime = System.currentTimeMillis();
+                    pr.result = wr.result;
+                    if (wr.result.result == "done") {
+                        ps.completeRuns++;
+                    } else {
+                        ps.stalledRuns++;
+                    }
+                    ps.bestGen = Math.min(ps.bestGen, wr.result.generation);
+                    ps.bestScore = Math.min(ps.bestScore, wr.result.bestScore);
+                    System.out.println("WR " + wr.dispatchID + " returned, " + wr.result.result + " score: " + wr.result.bestScore + " gen:" + wr.result.generation);
+                    return;
+                }
+            }
+        }
+        System.out.println("Missing job returned, " + wr.dispatchID);
+
     }
 
     public DispatchServer() throws IOException {
@@ -195,14 +215,13 @@ public class DispatchServer {
                 final String requestMethod = he.getRequestMethod().toUpperCase();
                 switch (requestMethod) {
                     case METHOD_POST:
-                        final Map<String, String> postData =  getPostData(he.getRequestBody());
+                        final Map<String, String> postData = getPostData(he.getRequestBody());
                         System.out.println("data Received from: " + he.getRemoteAddress());
 
                         if (postData.get("data") != null) {
                             Gson gson = new Gson();
                             try {
-                                wr  = gson.fromJson(postData.get("data"), workResponce.class);
-
+                                wr = gson.fromJson(postData.get("data"), workResponce.class);
                                 good = true;
                             } catch (JsonSyntaxException e) {
                                 System.out.println(e.getMessage() + " gson parse error");
@@ -235,7 +254,7 @@ public class DispatchServer {
                 }
             } finally {
                 he.close();
-                if(good){
+                if (good) {
                     parseResponce(wr);
                 }
             }
@@ -275,7 +294,7 @@ public class DispatchServer {
         }
     }
 
-    private static  Map<String, String> getPostData(InputStream is) {
+    private static Map<String, String> getPostData(InputStream is) {
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(is));
             //StringBuilder out = new StringBuilder();
@@ -290,7 +309,11 @@ public class DispatchServer {
             Map<String, String> params = new LinkedHashMap<String, String>();
             for (int i = 0; i < st.size(); i++) {
                 if (st.get(i).startsWith("Content-Disposition: form-data; name=")) {
-                    params.putIfAbsent(st.get(i).substring(38,st.get(i).length()-1), st.get(i + 1));
+                    params.putIfAbsent(st.get(i).substring(38, st.get(i).length() - 1), st.get(i + 1));
+                }else if(st.get(i).split("=").length == 2){
+                    String[] s = st.get(i).split("=");
+                    //params.putIfAbsent(s[0].substring(1,s[0].length()-1), s[1].substring(1,s[1].length()-1));
+                    params.putIfAbsent(s[0],s[1]);
                 }
             }
             return params;
