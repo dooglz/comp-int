@@ -17,7 +17,7 @@ public class workResponce {
     public synchronized void sendToServer()throws IOException{
         CloseableHttpClient httpclient = HttpClients.createDefault();
         try {
-            HttpPost httpPost = new HttpPost("http://localhost:8080/submit");
+            HttpPost httpPost = new HttpPost(Main.ip+"/submit");
             Gson g = new Gson();
             StringEntity se = new StringEntity("data="+g.toJson(this));
             httpPost.setEntity(se);

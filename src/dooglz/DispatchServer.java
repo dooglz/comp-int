@@ -117,6 +117,10 @@ public class DispatchServer {
         pr.disaptchID = wo.dispatchID;
         pr.disaptchTime = System.currentTimeMillis();
         rd.problems[0].runs.add(pr);
+        //update file
+        rd.lastUpdateTime = System.currentTimeMillis();
+        rd.version++;
+        saveTofile(rd);
         return wo;
     }
 
@@ -135,6 +139,12 @@ public class DispatchServer {
                     ps.bestGen = Math.min(ps.bestGen, wr.result.generation);
                     ps.bestScore = Math.min(ps.bestScore, wr.result.bestScore);
                     System.out.println("WR " + wr.dispatchID + " returned, " + wr.result.result + " score: " + wr.result.bestScore + " gen:" + wr.result.generation);
+
+                    //
+                    //update file
+                    rd.lastUpdateTime = System.currentTimeMillis();
+                    rd.version++;
+                    saveTofile(rd);
                     return;
                 }
             }

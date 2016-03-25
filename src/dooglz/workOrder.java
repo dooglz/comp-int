@@ -24,7 +24,7 @@ public class workOrder {
         workOrder wo = null;
         CloseableHttpClient httpclient = HttpClients.createDefault();
         try {
-            HttpGet httpGet = new HttpGet("http://localhost:8080/req");
+            HttpGet httpGet = new HttpGet(Main.ip+"/req");
             CloseableHttpResponse response1 = httpclient.execute(httpGet);
             try {
                 System.out.println("Asked dispatch for job: " + response1.getStatusLine());
