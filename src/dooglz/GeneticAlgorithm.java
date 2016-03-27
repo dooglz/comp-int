@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static dooglz.util.*;
+import static java.lang.Thread.currentThread;
 
 public class GeneticAlgorithm {
     public GenAlgParams p;
@@ -39,7 +40,7 @@ public class GeneticAlgorithm {
 
         for (int i = 0; i < p.popsize; i++) {
             if (i % 64 == 0) {
-                System.out.println("PreGen " + i * 100 / p.popsize + "%");
+                System.out.println(currentThread().getId() + " PreGen " + i * 100 / p.popsize + "%");
             }
             population[i] = DSolution.getRand(problem, true, p.seedRange, p.goal);
         }
@@ -84,7 +85,7 @@ public class GeneticAlgorithm {
             bestever = Math.min(bestever, best);
 
             if (bestever <= p.goal) {
-                System.out.print("BEST SOLUTION FOUND! Generation: " + i);
+                System.out.print(currentThread().getId() + " BEST SOLUTION FOUND! Generation: " + i);
                 return new GenAlgResult("done", bestever, i, System.currentTimeMillis() - startTime);
             }
 
@@ -129,7 +130,7 @@ public class GeneticAlgorithm {
                 if ((improvement == 0 && da == 0 && i > 10) || (i > p.maxGen) || (System.currentTimeMillis() - startTime) > p.maxTime) {
                     return new GenAlgResult("stall", bestever, i, System.currentTimeMillis() - startTime);
                 }
-                System.out.print("Run: " + i + " BestEver: " + bestever + " Top:" + best + " avg10:" + avg10 + " avg25:" + avg25 + " avg50:" + avg50 + " avg:" + avg);
+                System.out.print(currentThread().getId() + " Run: " + i + " BestEver: " + bestever + " Top:" + best + " avg10:" + avg10 + " avg25:" + avg25 + " avg50:" + avg50 + " avg:" + avg);
                 System.out.print(" improvement: " + improvement + "\tdivergence:" + divergence + "\tdivavg:" + da + "\tresets:" + resets + "\tGenTime:" + gta);
                 System.out.println();
                 i++;

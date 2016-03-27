@@ -38,6 +38,25 @@ public class DSolution implements Comparator<DSolution>, Comparable<DSolution> {
         return true;
     }
 
+    static DSolution getRand(DProblem prob, boolean optimised, int searchspace, int goal) {
+        if (searchspace < 1) {
+            searchspace = 1;
+        }
+        DSolution ss[] = new DSolution[searchspace];
+        for (int i = 0; i < searchspace; i++) {
+            ss[i] = new DSolution(prob, JSSP.getRandomSolution(prob.pProblem), prob.machineCount, prob.jobCount);
+            if (optimised) {
+                ss[i].MakeFeasible();
+            }
+            if (ss[i].Score(true) <= goal) {
+                System.out.println("yolo");
+                return ss[i];
+            }
+        }
+        Arrays.sort(ss);
+        return ss[0];
+    }
+
     @Override
     public int compare(DSolution a, DSolution b) {
         return a.Score(false) - b.Score(false);
@@ -87,25 +106,6 @@ public class DSolution implements Comparator<DSolution>, Comparable<DSolution> {
         for (int i = 0; i < missingFrom.size(); i++) {
             this.sol[m][holes.get(i)] = missingFrom.get(i);
         }
-    }
-
-    static DSolution getRand(DProblem prob, boolean optimised, int searchspace, int goal) {
-        if (searchspace < 1) {
-            searchspace = 1;
-        }
-        DSolution ss[] = new DSolution[searchspace];
-        for (int i = 0; i < searchspace; i++) {
-            ss[i] = new DSolution(prob, JSSP.getRandomSolution(prob.pProblem), prob.machineCount, prob.jobCount);
-            if (optimised) {
-                ss[i].MakeFeasible();
-            }
-            if (ss[i].Score(true) <= goal) {
-                System.out.println("yolo");
-                return ss[i];
-            }
-        }
-        Arrays.sort(ss);
-        return ss[0];
     }
 
     public boolean IsFeasible() {

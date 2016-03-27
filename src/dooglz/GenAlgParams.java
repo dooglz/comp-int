@@ -28,13 +28,14 @@ public class GenAlgParams {
         this.maxGen = maxGen;
         this.maxTime = maxTime;
     }
-    public GenAlgParams(){
+
+    public GenAlgParams() {
         this.goal = 100;
         this.problemID = 100;
         this.maxGen = 200;
         this.tournamentNewChilderenCount = 4;
         this.tournamentSampleSize = 32;
-        this.crossovermode =5;
+        this.crossovermode = 5;
         this.maxTime = 400000;
         this.popsize = 128;
         this.seedRange = 32;

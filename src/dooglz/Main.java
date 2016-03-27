@@ -1,7 +1,6 @@
 package dooglz;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
 
 class worker extends Thread {
 
@@ -15,17 +14,8 @@ class worker extends Thread {
             //get job
             System.out.println("Worker " + id + " getting new job");
             workOrder wo = null;
-            try {
-                wo = workOrder.GetFromDispatch();
-            } catch (IOException e) {
-                System.out.println(" -- error "+ e.getMessage());
-                try {
-                    Thread.sleep(2000);
-                } catch (InterruptedException ee) {
-                }
-                continue;
-            }
-            System.out.println("Worker " + id + " new work order "+wo.dispatchID+" "+wo.params.problemID);
+            wo = workOrder.GetFromDispatch();
+            System.out.println("Worker " + id + " new work order " + wo.dispatchID + " " + wo.params.problemID);
 
             //process
             GeneticAlgorithm ga = new GeneticAlgorithm(wo.params);
@@ -34,51 +24,47 @@ class worker extends Thread {
             workResponce wr = new workResponce();
             wr.dispatchID = wo.dispatchID;
             wr.result = res;
-
-            try {
-                wr.sendToServer();
-            }catch (IOException e){
-                continue; //Todo retry
-            }
+            wr.sendToServer();
         }
     }
 }
 
 public class Main {
-    public static String ip = "";
+    public static String ip = "0.0.0.0";
+
     public static void main(String[] args) throws InterruptedException, IOException {
         boolean serveMode = false;
         int t = 0;
         for (int i = 0; i < args.length; i++) {
-            switch (args[i]){
+            switch (args[i]) {
                 case "-server":
-                    serveMode  =true;
+                    serveMode = true;
                     break;
                 case "-worker":
                     serveMode = false;
                     break;
                 case "-t":
-                    t = Integer.parseInt(args[i+1]);
+                    t = Integer.parseInt(args[i + 1]);
                     i++;
                     break;
                 case "-ip":
-                    ip = args[i+1];
+                    ip = args[i + 1];
                     i++;
                     break;
                 default:
-                    System.out.println("unknown param "+args[i]);
+                    System.out.println("unknown param " + args[i]);
             }
         }
 
-        if(serveMode) {
+        if (serveMode) {
             DispatchServer da = new DispatchServer();
             da.Start();
-        }else{
-            if(t < 1){
+        } else {
+            if (t < 1) {
                 t = Runtime.getRuntime().availableProcessors();
             }
             worker[] threads = new worker[t];
-            for (worker w : threads){
+            for (worker w : threads) {
                 w = new worker();
                 w.start();
             }

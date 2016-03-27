@@ -9,8 +9,8 @@ public class SolutionGenerator {
     public static int jobcount;
 
     public SolutionGenerator(int machinecount, int jobcount) {
-        this.machinecount = machinecount;
-        this.jobcount = jobcount;
+        SolutionGenerator.machinecount = machinecount;
+        SolutionGenerator.jobcount = jobcount;
     }
 
     public DSolution RndGenByOpId(DProblem p, float randomness) {
@@ -50,7 +50,7 @@ public class SolutionGenerator {
         for (int i = 0; i < sortedjobs.size(); i++) {
             DJob j = sortedjobs.get(i);
             int jid = j.id;
-            for (int k = 0; k < this.machinecount; k++) {
+            for (int k = 0; k < machinecount; k++) {
                 int machine = j.ops[k].machine.id;
                 for (int m = 0; m < jobcount; m++) {
                     if (solutionArray.sol[machine][m] == -1) {
@@ -61,11 +61,11 @@ public class SolutionGenerator {
             }
         }
         if (randomness > 0.0f) {
-            final int swapcount = (int) ((float) (this.machinecount * this.jobcount) * randomness);
+            final int swapcount = (int) ((float) (machinecount * jobcount) * randomness);
             for (int k = 0; k < swapcount; k++) {
-                final int mid = (int) (Math.floor(Math.random() * (float) this.machinecount));
-                final int j1 = (int) (Math.floor(Math.random() * (float) this.jobcount));
-                final int j2 = (int) (Math.floor(Math.random() * (float) this.jobcount));
+                final int mid = (int) (Math.floor(Math.random() * (float) machinecount));
+                final int j1 = (int) (Math.floor(Math.random() * (float) jobcount));
+                final int j2 = (int) (Math.floor(Math.random() * (float) jobcount));
                 if (j1 == j2) {
                     continue;
                 }
