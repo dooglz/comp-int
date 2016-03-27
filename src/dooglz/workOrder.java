@@ -19,7 +19,7 @@ public class workOrder {
     public long dispatchID;
     public GenAlgParams params;
 
-    public static workOrder GetFromDispatch() {
+    public static synchronized workOrder GetFromDispatch() {
         workOrder wo = null;
         boolean done = false;
         while (!done) {
@@ -29,7 +29,7 @@ public class workOrder {
                 CloseableHttpResponse response1 = httpclient.execute(httpGet);
                 done = true;
                 try {
-                    System.out.println("Asked dispatch for job: " + response1.getStatusLine());
+                    System.out.println(currentThread().getId() + " Asked dispatch for job: " + response1.getStatusLine());
                     if (response1.getStatusLine().getStatusCode() == 200) {
                         HttpEntity entity1 = response1.getEntity();
                         BufferedReader reader = new BufferedReader(new InputStreamReader(entity1.getContent()));

@@ -347,7 +347,7 @@ public class DispatchServer {
                     }
                     ps.bestGen = Math.min(ps.bestGen, wr.result.generation);
                     ps.bestScore = Math.min(ps.bestScore, wr.result.bestScore);
-                    System.out.println("WR " + wr.dispatchID + " returned, " + wr.result.result + " score: " + wr.result.bestScore + " gen:" + wr.result.generation);
+                    System.out.println("WR " + wr.dispatchID + " returned, " + wr.result.result + " score: " + wr.result.bestScore + " ("+ps.lb+") gen:" + wr.result.generation+ " ("+ps.bestGen+") Time:"+ (pr.returnTime - pr.disaptchTime) +" pid:" +pr.params.problemID+" "+pr.params.popsize);
 
                     //
                     //update file

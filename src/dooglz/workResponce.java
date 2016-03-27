@@ -17,7 +17,7 @@ public class workResponce {
     public long dispatchID;
     public GenAlgResult result;
 
-    public void sendToServer() {
+    public synchronized void sendToServer() {
         CloseableHttpClient httpclient = HttpClients.createDefault();
         boolean done = false;
         while (!done) {
