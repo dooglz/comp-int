@@ -14,10 +14,8 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 class ProblemRun {
     public long disaptchID;
@@ -43,9 +41,66 @@ class runData {
     public problemStat[] problems;
 }
 
+class Sentinel extends Thread {
+    private DispatchServer ds;
+
+    public Sentinel(DispatchServer ds) {
+        this.ds = ds;
+    }
+
+    private void go() {
+        synchronized (ds.rundDataLock) {
+            String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+            System.out.println("##" + timeStamp + " -- " + ds.rd.version);
+            int inflight = 0;
+            int finished = 0;
+            for (int i = 0; i < ds.rd.problems.length; i++) {
+                problemStat ps = ds.rd.problems[i];
+                if(ps.bestScore < 0){
+                    ps.bestScore = Integer.MAX_VALUE;
+                }
+                if(ps.bestGen < 0){
+                    ps.bestGen = Integer.MAX_VALUE;
+                }
+                for (int j = 0; j < ps.runs.size(); j++) {
+                    ProblemRun pr = ps.runs.get(j);
+                    if (pr.result == null) {
+                        inflight++;
+                    } else {
+                        finished++;
+                    }
+                    if (pr.disaptchTime == 0) {
+                        pr.disaptchTime = System.currentTimeMillis() - 100;
+                    }
+                    if (pr.returnTime == 0 && System.currentTimeMillis() - pr.disaptchTime > 1500000) { //25 mins
+                        System.out.println("Job " + pr.disaptchID + "Took too long to return, resettting");
+                        ps.runs.remove(pr);
+                        j--;
+                    }
+                }
+            }
+            System.out.println("Jobs in-flight: " + inflight + ", completed jobs: " + finished);
+        }
+    }
+
+    @Override
+    public void run() {
+        while (true) {
+            if (Thread.currentThread().isInterrupted()) {
+                return;
+            }
+            try {
+                Thread.sleep(180000);//3 mins
+            } catch (InterruptedException e) {
+            }
+            go();
+        }
+    }
+}
+
 
 public class DispatchServer {
-
+    public static final Object rundDataLock = new Object();
     private static final String HOSTNAME = "localhost";
     private static final int PORT = 8080;
     private static final int BACKLOG = 1;
@@ -60,39 +115,40 @@ public class DispatchServer {
     private static final String METHOD_OPTIONS = "OPTIONS";
     private static final String ALLOWED_METHODS = METHOD_GET + "," + METHOD_OPTIONS;
     private HttpServer server;
-    private runData rd;
+    public runData rd;
 
     public DispatchServer() throws IOException {
-        rd = loadFromFile();
-        if (rd == null) {
-            System.out.println("Sttarting new runData");
-            rd = new runData();
-            ArrayList<problemStat> psa = new ArrayList<>();
-            for (int i = 0; i < 150; i++) {
-                Problem p = JSSP.getProblem(i);
-                if (p != null) {
-                    problemStat ps = new problemStat();
-                    ps.id = i;
-                    ps.lb = p.getLowerBound();
-                    ps.bestGen = -1;
-                    ps.bestScore = -1;
-                    ps.completeRuns = 0;
-                    ps.stalledRuns = 0;
-                    ps.runs = new ArrayList<>();
-                    psa.add(ps);
+        synchronized (rundDataLock) {
+            rd = loadFromFile();
+            if (rd == null) {
+                System.out.println("Sttarting new runData");
+                rd = new runData();
+                ArrayList<problemStat> psa = new ArrayList<>();
+                for (int i = 0; i < 150; i++) {
+                    Problem p = JSSP.getProblem(i);
+                    if (p != null) {
+                        problemStat ps = new problemStat();
+                        ps.id = i;
+                        ps.lb = p.getLowerBound();
+                        ps.bestGen = Integer.MAX_VALUE;
+                        ps.bestScore = Integer.MAX_VALUE;
+                        ps.completeRuns = 0;
+                        ps.stalledRuns = 0;
+                        ps.runs = new ArrayList<>();
+                        psa.add(ps);
+                    }
                 }
+                rd.problems = psa.toArray(new problemStat[psa.size()]);
+                rd.version = 0;
+                rd.lastUpdateTime = System.currentTimeMillis();
+            } else {
+                System.out.println("loaded Rd file: " + rd.version);
             }
-            rd.problems = psa.toArray(new problemStat[psa.size()]);
-            rd.version = 0;
+            //update file
             rd.lastUpdateTime = System.currentTimeMillis();
-        } else {
-            System.out.println("loaded Rd file: " + rd.version);
+            rd.version++;
+            saveTofile(rd);
         }
-        //update file
-        rd.lastUpdateTime = System.currentTimeMillis();
-        rd.version++;
-        saveTofile(rd);
-
         server = HttpServer.create(new InetSocketAddress(Main.ip, PORT), BACKLOG);
         server.createContext("/req", he -> {
             try {
@@ -267,6 +323,8 @@ public class DispatchServer {
     }
 
     public void Start() {
+        Sentinel sn = new Sentinel(this);
+        sn.start();
         server.start();
     }
 
@@ -275,90 +333,99 @@ public class DispatchServer {
     }
 
     private synchronized GenAlgParams getNewRunFromProblemStat(problemStat ps) {
-        GenAlgParams p = new GenAlgParams();
-        p.goal = ps.lb;
-        p.problemID = ps.id;
-        if (ps.runs.size() == 0) {
-            p.maxGen = 200;
-            p.tournamentNewChilderenCount = 4;
-            p.tournamentSampleSize = 32;
-            p.crossovermode = 5;
-            p.maxTime = 400000;
-            p.popsize = 128;
-            p.seedRange = 32;
-            p.resetTrigger = 300;
-            p.tournamentMutateRange = 128;
-            return p;
-        } else {
-            p.maxGen = 200 + (ps.runs.size() * 50);
-            p.tournamentNewChilderenCount = 4;
-            p.tournamentSampleSize = 32;
-            p.crossovermode = 5;
-            p.maxTime = 400000;
-            p.popsize = 128 + (ps.runs.size() * 50);
-            p.seedRange = 32;
-            p.resetTrigger = 300;
-            p.tournamentMutateRange = 128;
-            return p;
+        synchronized (rundDataLock) {
+            GenAlgParams p = new GenAlgParams();
+            p.goal = ps.lb;
+            p.problemID = ps.id;
+            if (ps.runs.size() == 0) {
+                p.maxGen = 100;
+                p.tournamentNewChilderenCount = 4;
+                p.tournamentSampleSize = 32;
+                p.crossovermode = 5;
+                p.maxTime = 400000;
+                p.popsize = 128;
+                p.seedRange = 32;
+                p.resetTrigger = 300;
+                p.tournamentMutateRange = 128;
+                return p;
+            } else {
+                p.maxGen = 100 + (ps.runs.size() * 50);
+                p.tournamentNewChilderenCount = 4;
+                p.tournamentSampleSize = 32;
+                p.crossovermode = 5;
+                p.maxTime = 400000;
+                p.popsize = 128 + (ps.runs.size() * 50);
+                p.seedRange = 32;
+                p.resetTrigger = 300;
+                p.tournamentMutateRange = 128;
+                return p;
+            }
         }
     }
 
     private synchronized workOrder getNextJob() {
-        workOrder wo = new workOrder();
-        ProblemRun pr = new ProblemRun();
-        wo.dispatchID = (long) (Math.random() * ((double) Long.MAX_VALUE));
-        //search for any Problem stat with 0 runs.
-        for (problemStat ps : rd.problems) {
-            if (ps.runs.size() == 0) {
-                wo.params = getNewRunFromProblemStat(ps);
-                pr.params = wo.params;
-                pr.disaptchID = wo.dispatchID;
-                ps.runs.add(pr);
-                //update file
-                rd.lastUpdateTime = System.currentTimeMillis();
-                rd.version++;
-                saveTofile(rd);
-                return wo;
-            }
-        }
-        wo.params = getNewRunFromProblemStat(rd.problems[0]);
-        pr.params = wo.params;
-        pr.disaptchID = wo.dispatchID;
-        pr.disaptchTime = System.currentTimeMillis();
-        rd.problems[0].runs.add(pr);
-        //update file
-        rd.lastUpdateTime = System.currentTimeMillis();
-        rd.version++;
-        saveTofile(rd);
-        return wo;
-    }
-
-    private synchronized void parseResponce(workResponce wr) {
-        //System.out.println("parsing new WR " + wr.dispatchID);
-        for (problemStat ps : rd.problems) {
-            for (ProblemRun pr : ps.runs) {
-                if (pr.disaptchID == wr.dispatchID) {
-                    pr.returnTime = System.currentTimeMillis();
-                    pr.result = wr.result;
-                    if (wr.result.result == "done") {
-                        ps.completeRuns++;
-                    } else {
-                        ps.stalledRuns++;
-                    }
-                    ps.bestGen = Math.min(ps.bestGen, wr.result.generation);
-                    ps.bestScore = Math.min(ps.bestScore, wr.result.bestScore);
-                    System.out.println("WR " + wr.dispatchID + " returned, " + wr.result.result + " score: " + wr.result.bestScore + " ("+ps.lb+") gen:" + wr.result.generation+ " ("+ps.bestGen+") Time:"+ (pr.returnTime - pr.disaptchTime) +" pid:" +pr.params.problemID+" "+pr.params.popsize);
-
-                    //
+        synchronized (rundDataLock) {
+            workOrder wo = new workOrder();
+            ProblemRun pr = new ProblemRun();
+            wo.dispatchID = (long) (Math.random() * ((double) Long.MAX_VALUE));
+            //search for any Problem stat with 0 runs.
+            for (problemStat ps : rd.problems) {
+                if (ps.runs.size() == 0) {
+                    wo.params = getNewRunFromProblemStat(ps);
+                    pr.params = wo.params;
+                    pr.disaptchID = wo.dispatchID;
+                    pr.disaptchTime = System.currentTimeMillis();
+                    pr.result = null;
+                    ps.runs.add(pr);
                     //update file
                     rd.lastUpdateTime = System.currentTimeMillis();
                     rd.version++;
                     saveTofile(rd);
-                    return;
+                    return wo;
                 }
             }
+            //choose a random pr
+            wo.params = getNewRunFromProblemStat(rd.problems[(int) Math.floor(Math.random() * ((double) rd.problems.length))]);
+            pr.params = wo.params;
+            pr.disaptchID = wo.dispatchID;
+            pr.disaptchTime = System.currentTimeMillis();
+            pr.result = null;
+            rd.problems[0].runs.add(pr);
+            //update file
+            rd.lastUpdateTime = System.currentTimeMillis();
+            rd.version++;
+            saveTofile(rd);
+            return wo;
         }
-        System.out.println("Missing job returned, " + wr.dispatchID);
+    }
 
+    private synchronized void parseResponce(workResponce wr) {
+        synchronized (rundDataLock) {
+            //System.out.println("parsing new WR " + wr.dispatchID);
+            for (problemStat ps : rd.problems) {
+                for (ProblemRun pr : ps.runs) {
+                    if (pr.disaptchID == wr.dispatchID) {
+                        pr.returnTime = System.currentTimeMillis();
+                        pr.result = wr.result;
+                        if (wr.result.result == "done") {
+                            ps.completeRuns++;
+                        } else {
+                            ps.stalledRuns++;
+                        }
+                        ps.bestGen = Math.min(ps.bestGen, wr.result.generation);
+                        ps.bestScore = Math.min(ps.bestScore, wr.result.bestScore);
+                        System.out.println("WR " + wr.dispatchID + " returned, " + wr.result.result + " score: " + wr.result.bestScore + " (" + ps.lb + ") gen:" + wr.result.generation + " (" + ps.bestGen + ") Time:" + (pr.returnTime - pr.disaptchTime) + " pid:" + pr.params.problemID + " " + pr.params.popsize);
+
+                        //
+                        //update file
+                        rd.lastUpdateTime = System.currentTimeMillis();
+                        rd.version++;
+                        saveTofile(rd);
+                        return;
+                    }
+                }
+            }
+            System.out.println("Missing job returned, " + wr.dispatchID);
+        }
     }
 }

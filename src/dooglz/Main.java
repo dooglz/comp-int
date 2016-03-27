@@ -24,7 +24,7 @@ class worker extends Thread {
             workResponce wr = new workResponce();
             wr.dispatchID = wo.dispatchID;
             wr.result = res;
-            wr.sendToServer();
+            workResponce.sendToServer(wr);
         }
     }
 }

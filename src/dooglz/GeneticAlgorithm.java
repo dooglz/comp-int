@@ -85,11 +85,11 @@ public class GeneticAlgorithm {
             bestever = Math.min(bestever, best);
 
             if (bestever <= p.goal) {
-                System.out.print(currentThread().getId() + " BEST SOLUTION FOUND! Generation: " + i);
-                return new GenAlgResult("done", bestever, i, System.currentTimeMillis() - startTime);
+                System.out.println(currentThread().getId() + " BEST SOLUTION FOUND! Generation: " + i + " score:" + bestever+ " goal: "+p.goal+ " ");
+                return new GenAlgResult("one", bestever, i, System.currentTimeMillis() - startTime);
             }
 
-            if (ob != best || i % 10 == 0) {
+            if (ob != best || i % 25 == 0) {
                 int avg = 0, avg50 = 0, avg25 = 0, avg10 = 0;
                 for (int j = 0; j < population.length; j++) {
                     if (j < Math.floor(population.length * 0.1)) {

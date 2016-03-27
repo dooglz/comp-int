@@ -17,14 +17,14 @@ public class workResponce {
     public long dispatchID;
     public GenAlgResult result;
 
-    public synchronized void sendToServer() {
-        CloseableHttpClient httpclient = HttpClients.createDefault();
+    public static synchronized void sendToServer(workResponce wr) {
         boolean done = false;
         while (!done) {
+            CloseableHttpClient httpclient = HttpClients.createDefault();
             try {
                 HttpPost httpPost = new HttpPost(Main.ip + "/submit");
                 Gson g = new Gson();
-                StringEntity se = new StringEntity("data=" + g.toJson(this));
+                StringEntity se = new StringEntity("data=" + g.toJson(wr));
                 httpPost.setEntity(se);
                 CloseableHttpResponse response2 = httpclient.execute(httpPost);
                 done = true;
