@@ -17,6 +17,7 @@ public class GeneticAlgorithm {
     public DProblem problem;
     private int machinecount;
     private int jobcount;
+    private boolean shouldStop;
 
     public GeneticAlgorithm(GenAlgParams params) {
         this.p = params;
@@ -25,17 +26,26 @@ public class GeneticAlgorithm {
         this.jobcount = problem.jobCount;
     }
 
+    public void HandleCmd(String cmd){
+        switch (cmd){
+            case"stop":
+                shouldStop = true;
+                break;
+        }
+    }
+
     public GenAlgResult Start() {
         int prevavg = 0;
         int prevavg10 = 0;
-        int improvement;
-        int divergence;
+        int improvement=0 ;
+        int divergence=0;
         int best = 0;
         int resets = 0;
         int[] divergenceAverage = new int[10];
         long[] generationTimeAverage = new long[10];
         int dai = 0;
         int gtai = 0;
+        shouldStop = false;
         DSolution population[] = new DSolution[p.popsize];
 
         for (int i = 0; i < p.popsize; i++) {
@@ -49,7 +59,7 @@ public class GeneticAlgorithm {
         int bestever = Integer.MAX_VALUE;
         int i = 0;
         long startTime = System.currentTimeMillis();
-        while (true) {
+        while (true&& !shouldStop) {
 
             if (i > 2 && i % p.resetTrigger == 0) {
                 resets++;
@@ -127,7 +137,7 @@ public class GeneticAlgorithm {
                 }
                 gta /= generationTimeAverage.length;
                 //evaluate ending
-                if ((improvement == 0 && da == 0 && i > 10) || (i > p.maxGen) || (System.currentTimeMillis() - startTime) > p.maxTime) {
+                if (improvement == 0 && da == 0 && i > 10) {
                     return new GenAlgResult("stall", bestever, i, System.currentTimeMillis() - startTime);
                 }
                 System.out.print(currentThread().getId() + " Run: " + i + " BestEver: " + bestever + " Top:" + best + " avg10:" + avg10 + " avg25:" + avg25 + " avg50:" + avg50 + " avg:" + avg);
@@ -135,7 +145,12 @@ public class GeneticAlgorithm {
                 System.out.println();
                 i++;
             }
+            //evaluate ending
+            if ((i > p.maxGen) || (System.currentTimeMillis() - startTime) > p.maxTime) {
+                return new GenAlgResult("stall", bestever, i, System.currentTimeMillis() - startTime);
+            }
         }
+        return new GenAlgResult("stall", bestever, i, System.currentTimeMillis() - startTime);
         //return new GenAlgResult("stall",bestever,0);
     }
 

@@ -47,8 +47,29 @@ class Sentinel extends Thread {
     public Sentinel(DispatchServer ds) {
         this.ds = ds;
     }
+    public void Status(){
+        synchronized (ds.rundDataLock) {
+            String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+            System.out.println("##" + timeStamp + " -- " + ds.rd.version);
+            int inflight = 0;
+            int finished = 0;
+            for (int i = 0; i < ds.rd.problems.length; i++) {
+                problemStat ps = ds.rd.problems[i];
+                System.out.println("Problem: "+ps.id+" LB:"+ps.lb+" Best Score:"+ps.bestScore+" Best Gen:"+ps.bestGen+" CR:"+ps.completeRuns+" SR:"+ps.stalledRuns+" rs:"+ps.runs.size());
+                for (int j = 0; j < ps.runs.size(); j++) {
+                    ProblemRun pr = ps.runs.get(j);
+                    if (pr.result == null) {
+                        inflight++;
+                    } else {
+                        finished++;
+                    }
+                }
+            }
+            System.out.println("Jobs in-flight: " + inflight + ", completed jobs: " + finished);
+        }
+    }
 
-    private void go() {
+    public void go() {
         synchronized (ds.rundDataLock) {
             String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
             System.out.println("##" + timeStamp + " -- " + ds.rd.version);
@@ -66,7 +87,7 @@ class Sentinel extends Thread {
                 for (int j = 0; j < ps.runs.size(); j++) {
                     ProblemRun pr = ps.runs.get(j);
                     if (pr.params.problemID != ps.id) {
-                        System.out.println("PR " + pr.params.problemID + " " +pr.disaptchID+" saved to wrong PS " + ps.id);
+                        System.out.println("PR " + pr.params.problemID + " " + pr.disaptchID + " saved to wrong PS " + ps.id);
                         for (int k = 0; k < ds.rd.problems.length; k++) {
                             problemStat ps2 = ds.rd.problems[k];
                             if (pr.params.problemID == ps2.id) {
@@ -102,11 +123,33 @@ class Sentinel extends Thread {
             ds.saveTofile(ds.rd);
         }
     }
-
+    public void Purge(){
+        synchronized (ds.rundDataLock) {
+            System.out.println(" Purging");
+           int p =0;
+            for (int i = 0; i < ds.rd.problems.length; i++) {
+                problemStat ps = ds.rd.problems[i];
+                for (int j = 0; j < ps.runs.size(); j++) {
+                    ProblemRun pr = ps.runs.get(j);
+                    if (pr.result == null) {
+                        ps.runs.remove(pr);
+                        p++;
+                        j--;
+                    }
+                }
+            }
+            ds.rd.lastUpdateTime = System.currentTimeMillis();
+            ds.rd.version++;
+            ds.saveTofile(ds.rd);
+            System.out.println(" Purged:" + p);
+        }
+    }
+    private boolean run;
     @Override
     public void run() {
+        run = true;
         go();
-        while (true) {
+        while (run) {
             if (Thread.currentThread().isInterrupted()) {
                 return;
             }
@@ -116,6 +159,9 @@ class Sentinel extends Thread {
             }
             go();
         }
+    }
+    public void Stop(){
+        run = false;
     }
 }
 
@@ -137,8 +183,24 @@ public class DispatchServer {
     private static final String ALLOWED_METHODS = METHOD_GET + "," + METHOD_OPTIONS;
     private HttpServer server;
     public runData rd;
+    private Sentinel sn;
+
+    public void HandleCmd(String cmd) {
+        switch (cmd) {
+            case "status":
+                sn.Status();
+                break;
+            case "clean":
+                sn.go();
+                break;
+            case "purge":
+                sn.Purge();
+                break;
+        }
+    }
 
     public DispatchServer() throws IOException {
+        sn = null;
         synchronized (rundDataLock) {
             rd = loadFromFile();
             if (rd == null) {
@@ -344,13 +406,14 @@ public class DispatchServer {
     }
 
     public void Start() {
-        Sentinel sn = new Sentinel(this);
+        sn = new Sentinel(this);
         sn.start();
         server.start();
     }
 
     public void Stop() {
         server.stop(0);
+        sn.Stop();
     }
 
     private synchronized GenAlgParams getNewRunFromProblemStat(problemStat ps) {
@@ -363,7 +426,7 @@ public class DispatchServer {
                 p.tournamentNewChilderenCount = 4;
                 p.tournamentSampleSize = 32;
                 p.crossovermode = 5;
-                p.maxTime = 400000;
+                p.maxTime = 200000; // 2 mins for first run
                 p.popsize = 128;
                 p.seedRange = 128;
                 p.resetTrigger = 300;
@@ -374,7 +437,7 @@ public class DispatchServer {
                 p.tournamentNewChilderenCount = 4;
                 p.tournamentSampleSize = 32;
                 p.crossovermode = 5;
-                p.maxTime = 400000;
+                p.maxTime = 1200000;
                 p.popsize = 128 + (ps.runs.size() * 50);
                 p.seedRange = 128;
                 p.resetTrigger = 300;
@@ -422,7 +485,7 @@ public class DispatchServer {
                     if (pr.disaptchID == wr.dispatchID) {
                         pr.returnTime = System.currentTimeMillis();
                         pr.result = wr.result;
-                        if (wr.result.result == "done") {
+                        if (wr.result.result.equals("done")) {
                             ps.completeRuns++;
                         } else {
                             ps.stalledRuns++;
