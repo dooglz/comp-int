@@ -56,11 +56,28 @@ class Sentinel extends Thread {
             int finished = 0;
             for (int i = 0; i < ds.rd.problems.length; i++) {
                 problemStat ps = ds.rd.problems[i];
-                if(ps.bestScore < 0){
+                if (ps.bestScore < 0) {
                     ps.bestScore = Integer.MAX_VALUE;
                 }
-                if(ps.bestGen < 0){
+                if (ps.bestGen < 0) {
                     ps.bestGen = Integer.MAX_VALUE;
+                }
+                //look for missplaced prs.
+                for (int j = 0; j < ps.runs.size(); j++) {
+                    ProblemRun pr = ps.runs.get(j);
+                    if (pr.params.problemID != ps.id) {
+                        System.out.println("PR " + pr.params.problemID + " " +pr.disaptchID+" saved to wrong PS " + ps.id);
+                        for (int k = 0; k < ds.rd.problems.length; k++) {
+                            problemStat ps2 = ds.rd.problems[k];
+                            if (pr.params.problemID == ps2.id) {
+                                System.out.println("...Moved to PS " + ps2.id);
+                                ps2.runs.add(pr);
+                                ps.runs.remove(pr);
+                                j--;
+                                break;
+                            }
+                        }
+                    }
                 }
                 for (int j = 0; j < ps.runs.size(); j++) {
                     ProblemRun pr = ps.runs.get(j);
@@ -72,7 +89,7 @@ class Sentinel extends Thread {
                     if (pr.disaptchTime == 0) {
                         pr.disaptchTime = System.currentTimeMillis() - 100;
                     }
-                    if (pr.returnTime == 0 && System.currentTimeMillis() - pr.disaptchTime > 1500000) { //25 mins
+                    if (pr.returnTime == 0 && System.currentTimeMillis() - pr.disaptchTime > 2500000) { //25 mins
                         System.out.println("Job " + pr.disaptchID + "Took too long to return, resettting");
                         ps.runs.remove(pr);
                         j--;
@@ -80,11 +97,15 @@ class Sentinel extends Thread {
                 }
             }
             System.out.println("Jobs in-flight: " + inflight + ", completed jobs: " + finished);
+            ds.rd.lastUpdateTime = System.currentTimeMillis();
+            ds.rd.version++;
+            ds.saveTofile(ds.rd);
         }
     }
 
     @Override
     public void run() {
+        go();
         while (true) {
             if (Thread.currentThread().isInterrupted()) {
                 return;
@@ -258,7 +279,7 @@ public class DispatchServer {
         }
     }
 
-    private static void saveTofile(runData d) {
+    public static void saveTofile(runData d) {
         try {
             Writer writer = new FileWriter("myjsonstuff.json");
             Gson gson = new GsonBuilder().create();
@@ -344,7 +365,7 @@ public class DispatchServer {
                 p.crossovermode = 5;
                 p.maxTime = 400000;
                 p.popsize = 128;
-                p.seedRange = 32;
+                p.seedRange = 128;
                 p.resetTrigger = 300;
                 p.tournamentMutateRange = 128;
                 return p;
@@ -355,7 +376,7 @@ public class DispatchServer {
                 p.crossovermode = 5;
                 p.maxTime = 400000;
                 p.popsize = 128 + (ps.runs.size() * 50);
-                p.seedRange = 32;
+                p.seedRange = 128;
                 p.resetTrigger = 300;
                 p.tournamentMutateRange = 128;
                 return p;
@@ -368,29 +389,23 @@ public class DispatchServer {
             workOrder wo = new workOrder();
             ProblemRun pr = new ProblemRun();
             wo.dispatchID = (long) (Math.random() * ((double) Long.MAX_VALUE));
-            //search for any Problem stat with 0 runs.
-            for (problemStat ps : rd.problems) {
-                if (ps.runs.size() == 0) {
-                    wo.params = getNewRunFromProblemStat(ps);
-                    pr.params = wo.params;
-                    pr.disaptchID = wo.dispatchID;
-                    pr.disaptchTime = System.currentTimeMillis();
-                    pr.result = null;
-                    ps.runs.add(pr);
-                    //update file
-                    rd.lastUpdateTime = System.currentTimeMillis();
-                    rd.version++;
-                    saveTofile(rd);
-                    return wo;
+            problemStat ps;
+            if (Math.random() < 0.2) {
+                ps = rd.problems[(int) Math.floor(Math.random() * ((double) rd.problems.length))];
+            } else {
+                ps = rd.problems[0];
+                for (problemStat pst : rd.problems) {
+                    if (pst.runs.size() < ps.runs.size()) {
+                        ps = pst;
+                    }
                 }
             }
-            //choose a random pr
-            wo.params = getNewRunFromProblemStat(rd.problems[(int) Math.floor(Math.random() * ((double) rd.problems.length))]);
+            wo.params = getNewRunFromProblemStat(ps);
             pr.params = wo.params;
             pr.disaptchID = wo.dispatchID;
             pr.disaptchTime = System.currentTimeMillis();
             pr.result = null;
-            rd.problems[0].runs.add(pr);
+            ps.runs.add(pr);
             //update file
             rd.lastUpdateTime = System.currentTimeMillis();
             rd.version++;
