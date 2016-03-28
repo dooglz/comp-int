@@ -6,7 +6,7 @@
 \usepackage{uarial}
 \renewcommand{\familydefault}{\sfdefault}
 %%%%%%
-
+\usepackage{titlesec}
 \usepackage{graphicx}
 \graphicspath{{./images/}}
 
@@ -86,48 +86,78 @@ Computational Intelligence (SET10107)}
 
 \maketitle
 \begin{abstract}
-	\lipsum[5]
+	This report documents the implementation and tuning of an Evolutionary Algorithm in Java to solve a set of Job Shop Scheduling Problems. Computing optimal solutions for JSS problems in an NP-Hard task, therefore a brute-force approach is out of the question for problems with large sets of jobs. Evolutionary approaches have been proven to produce good and even optimal solutions in a reactively amount of time, this report implements an EA method using components describes by the literature, and then analyses the solutions produced and the different methods of reaching them.
 \end{abstract}
 
 \section{Introduction}
-\lipsum[5]
+\paragraph{JSSP}
+A Job Shop Scheduling Problem is made up of a set of Machines and Jobs, each Job contains a set of operations that must be processed in order and sequentially. The  Operations must be processed by a specific machine, each machine can only process one operation from one job at a time. Each Operation will utilise a machine for a pre-determined amount of time  A solution to the problem takes the form of a list stating the order of operations for each machine so that all jobs are completed in the shortest amount of time possible. This report uses a common simplified version of JSSP wherein each Job has the same amount of operations as there are machines, so that every job will use every machine exactly once.
+
+\paragraph{Encoding for Genetic Evolution}
+A solution to a JSSP problem is implemented in code as a 2D array, with each row representing a machine, and each column representing a Job, ordered by the order in which they should be processed. It should be noted that a machine processes an operation, not a job, but as each job only has one operation per machine, the corresponding job can be found trivially and so Job IDs can be used to simplify the implementation. The encoding does not encode the time of execution, only the order.  It is the job of the fitness function when decoding the solution to determine \textit{when} each operation is processed, abiding by the operation prerequisites and machine occupancy constrains. 
+
+\paragraph{Evolving a Solution}
+The rows of a solution array form the chromosomes to be processed by the evolutionary algorithm. Each row is a set of all the available Job IDs, and therefore any permutation of this set is a valid solution. 
+
+\paragraph{Comparing solutions}
+To obtain a fitness score for a solution, it must be decoded into a final schedule. This process involves determining the start and end time for processing operations on each machine. To do this, the order of operations in the solution is followed for each machine until an operation cannot be scheduled due to a non-complete pre-requite operation, in this case the machine will sit idle until the operation can be processed. Once this process is finished, te total runtime can be determined and used as a fitness value. Other metrics could also be used for fitness (e.g maximum Idle time, or concurrent machine occupancy), but this report only uses runtime to compare solutions.
 
 \section{Previous  Work}
 Discuss at least one previous published attempt at solving this or a similar problem. 
 Critically comment on the method used and results obtained.
 \lipsum[7]
 \cite{gonzalez2013efficient}
-ioioio
-hjhj \cite{gao2011efficient}
-iioioi
-hjhj \cite{zhang2011effective}
-\lipsum[7]
+
+\cite{gao2011efficient}
+
+\cite{zhang2011effective}
+
 \cite{driss2015effective}
-ewerwer
+
 \cite{wang2012new}
 
 \section{Methodology}
 Discuss the method(s) that you will use to solve the problem. 
 Describe the implementation used and any APIs/Libraries used to assist.
 \lipsum[7]
+\paragraph{Library Use}
+\paragraph{Fitness}
+
+\subsection{Implementation of Literature}
 \lipsum[7]
+
+\subsection{Solution Quality Metrics}
+Figure \ref{fig:genalgrunning}
 \lipsum[7]
+
+\subsection{Distributed Calibration }
 \lipsum[7]
-\lipsum[7]
-\lipsum[7]
+
 
 \section{Experiment Plan}
 Present an experimental plan to be used to investigate your approach
 \lipsum[7]
+\subsection{Selection}
 \lipsum[7]
+\subsection{Crossover}
 \lipsum[7]
+\subsection{Mutation}
 \lipsum[7]
+\subsection{GE Structure}
 \lipsum[7]
+\paragraph{Reset operation}
+\lipsum[7]
+\subsection{Termination Procedure}
+\lipsum[7]
+\subsection{Distribution}
+\lipsum[7]
+\subsection{Final adjustments}
 \lipsum[7]
 
 \section{Results}
 Present your results along with a basic statistical analysis.
 
+\subsection{Feasibility Optimisations}
 \figuremacroW
 {p100rnd}
 {Problem 100, Random Solution}
@@ -185,11 +215,15 @@ Critically analyse and reflect on the approach that you have taken. How do your 
 		}
 	\end{table}
 
-
+\figuremacroF
+{genalgrunning}
+{Output from EA}
+{Problem 119}
+{1.0}
 \figuremacroF
 {dispatchcmd}
 {Console output snippet from Dispatch Server}
-{Currently talking to ~150 Clients}
+{Currently talking to 150 Clients}
 {1.0}
 
 
