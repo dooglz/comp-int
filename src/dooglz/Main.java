@@ -1,5 +1,7 @@
 package dooglz;
 
+import modelP.JSSP;
+
 import java.io.IOException;
 
 class worker extends Thread {
@@ -34,14 +36,17 @@ public class Main {
 
     public static void main(String[] args) throws InterruptedException, IOException {
         boolean serveMode = false;
+        boolean workerMode =false;
         int t = 0;
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
                 case "-server":
                     serveMode = true;
+                    workerMode = false;
                     break;
                 case "-worker":
                     serveMode = false;
+                    workerMode =true;
                     break;
                 case "-t":
                     t = Integer.parseInt(args[i + 1]);
@@ -59,7 +64,7 @@ public class Main {
         if (serveMode) {
             DispatchServer da = new DispatchServer();
             da.Start();
-        } else {
+        } else if(workerMode) {
             if (t < 1) {
                 t = Runtime.getRuntime().availableProcessors();
             }
@@ -68,6 +73,20 @@ public class Main {
                 w = new worker();
                 w.start();
             }
+        }else{
+            //passthrough
+
+            DProblem Dprob = new DProblem(JSSP.getProblem(101));
+            DSolution ds = new DSolution(Dprob,Dprob.machineCount,Dprob.jobCount);
+            ds = DSolution.getRand(Dprob,false,0,0);
+            JSSP.printSolution(ds.sol,Dprob.pProblem);
+            String filename = JSSP.saveSolution(ds.sol,Dprob.pProblem);
+            JSSP.displaySolution(filename);
+            ds.MakeFeasible();;
+            JSSP.printSolution(ds.sol,Dprob.pProblem);
+            filename = JSSP.saveSolution(ds.sol,Dprob.pProblem);
+            JSSP.displaySolution(filename);
+
         }
         System.out.println(" ... and we are off to the races");
 /*

@@ -1,0 +1,199 @@
+
+\documentclass[14pt]{acmsiggraph}
+%% all this is for Arial
+\usepackage[english]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{uarial}
+\renewcommand{\familydefault}{\sfdefault}
+%%%%%%
+
+\usepackage{graphicx}
+\graphicspath{{./images/}}
+
+\newcommand{\figuremacroW}[4]{
+	\begin{figure}[h] %[htbp]
+		\centering
+		\includegraphics[width=#4\columnwidth]{#1}
+		\caption[#2]{\textbf{#2} - #3}
+		\label{fig:#1}
+	\end{figure}
+}
+
+\newcommand{\figuremacroF}[4]{
+	\begin{figure*}[t] % [htbp]
+		\centering
+		\includegraphics[width=#4\textwidth]{#1}
+		\caption[#2]{\textbf{#2} - #3}
+		\label{fig:#1}
+	\end{figure*}
+}
+
+\usepackage{afterpage}
+\usepackage{xcolor}
+\definecolor{lbcolor}{rgb}{0.98,0.98,0.98}
+\usepackage{listings}
+
+\lstset{
+	escapeinside={/*@}{@*/},
+	language=C++,
+	%basicstyle=\small\sffamily,
+	%basicstyle=\small\sffamily,	
+	basicstyle=\fontsize{8.5}{12}\selectfont,
+	%basicstyle=\small\ttfamily,
+	%basicstyle=\scriptsize, % \footnotesize,
+	%basicstyle=\footnotesize,
+	%keywordstyle=\color{blue}\bfseries,
+	%basicstyle= \listingsfont,
+	numbers=left,
+	numbersep=2pt,    
+	xleftmargin=2pt,
+	%numberstyle=\tiny,
+	frame=tb,
+	%frame=single,
+	columns=fullflexible,
+	showstringspaces=false,
+	tabsize=4,
+	keepspaces=true,
+	showtabs=false,
+	showspaces=false,
+	%showstringspaces=true
+	backgroundcolor=\color{lbcolor},
+	morekeywords={inline,public,class,private,protected,struct},
+	captionpos=t,
+	lineskip=-0.4em,
+	aboveskip=10pt,
+	%belowskip=50pt,
+	extendedchars=true,
+	breaklines=true,
+	prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
+	keywordstyle=\color[rgb]{0,0,1},
+	commentstyle=\color[rgb]{0.133,0.545,0.133},
+	stringstyle=\color[rgb]{0.627,0.126,0.941}
+}
+
+\usepackage{lipsum}
+
+\title{Using Evolutionary Algorithms for Job Shop Scheduling}
+
+\author{Sam Serrels\\\ 40082367@napier.ac.uk \\
+Edinburgh Napier University\\
+Computational Intelligence (SET10107)}
+\pdfauthor{Sam Serrels}
+
+\keywords{Evolutionary Algorithms, Genetiv Algorithms, Java, Job Shop}
+
+\begin{document}
+
+\maketitle
+\begin{abstract}
+	\lipsum[5]
+\end{abstract}
+
+\section{Introduction}
+\lipsum[5]
+
+\section{Previous  Work}
+Discuss at least one previous published attempt at solving this or a similar problem. 
+Critically comment on the method used and results obtained.
+\lipsum[7]
+\cite{gonzalez2013efficient}
+ioioio
+hjhj \cite{gao2011efficient}
+iioioi
+hjhj \cite{zhang2011effective}
+\lipsum[7]
+\cite{driss2015effective}
+ewerwer
+\cite{wang2012new}
+
+\section{Methodology}
+Discuss the method(s) that you will use to solve the problem. 
+Describe the implementation used and any APIs/Libraries used to assist.
+\lipsum[7]
+\lipsum[7]
+\lipsum[7]
+\lipsum[7]
+\lipsum[7]
+\lipsum[7]
+
+\section{Experiment Plan}
+Present an experimental plan to be used to investigate your approach
+\lipsum[7]
+\lipsum[7]
+\lipsum[7]
+\lipsum[7]
+\lipsum[7]
+\lipsum[7]
+
+\section{Results}
+Present your results along with a basic statistical analysis.
+
+\figuremacroW
+{p100rnd}
+{Problem 100, Random Solution}
+{Fitness 2471}
+{1.0}
+\figuremacroW
+{p100rndopt}
+{Problem 100, Random Solution, Optimised}
+{Fitness 1496}
+{1.0}
+
+
+\lipsum[7]
+\section{Conclusions}
+Critically analyse and reflect on the approach that you have taken. How do your results compare to those published? If your results are not as good as envisaged would you adopt a different approach to solving the problem.
+
+\lipsum[7]
+
+\bibliographystyle{acmsiggraph}
+\bibliography{report}
+
+
+\section{Appendix}
+\clearpage
+\begin{table}[b]
+	{
+		\centering
+		\resizebox{1.0\textwidth}{!}{
+			\begin{minipage}{\textwidth}
+				\centering
+				\begin{tabular}{p{1.4cm}|cccccccccc}
+					Test& 1024 & 2048 & 4096 & 8192 & 16384 & 32768 & 65536 & 131072 & 262144 & 524288\\ \hline \\
+					GTX980 512 & 0.233 & 0.321 & 0.652 & 1.145 & 1.974 & 9.219 & 36.789 & 135.558 & 500.509 & 2100.374\\
+					GTX980 256 & 0.222 & 0.307 & 0.612 & 1.065 & 1.937 & 9.162 & 34.392 & 134.494 & 489.240 & 2051.084\\
+					GTX980 128 & 0.132 & 0.194 & 0.296 & 0.716 & 1.891 & 8.721 & 53.158 & 120.636 & 471.306 & 1902.573\\
+					GTX980 64 & 0.132 & 0.172 & 0.277 & 0.645 & 1.862 & 7.259 & 31.745 & 118.255 & 451.687 & 1901.846\\
+					GTX980 32 & 0.110 & 0.157 & 0.289 & 0.640 & 1.833 & 7.255 & 28.108 & 116.337 & 451.348 & 1899.133\\
+					GTX980 16 & 0.150 & 0.224 & 0.464 & 1.468 & 3.561 & 13.522 & 63.056 & 222.645 & 917.328 & 0.000\\
+					\hline\\
+					CPU 1 core &  4.898 & 19.137 & 74.248 & 296.022 & 1185.570 & 4798.358 & 19412.055 & 76464.740 & 314798.033 & 1227484.000\\
+					CPU 2 cores &  2.510 & 9.825 & 39.221 & 155.133 & 613.820 & 2451.838 & 9838.845 & 40324.536 & 167580.294 & 797311.542\\
+					CPU 3 cores &  2.180 & 9.193 & 31.041 & 119.769 & 455.580 & 1821.591 & 7185.361 & 27788.974 & 115910.695 & 496237.950\\
+					CPU 4 cores &  1.674 & 7.044 & 22.304 & 98.299 & 410.325 & 1597.991 & 5535.962 & 21020.147 & 95596.342 & 377586.191\\
+					CPU 5 cores &  2.018 & 6.930 & 25.998 & 89.877 & 375.376 & 1455.549 & 5624.133 & 22419.623 & 92536.925 & 366961.358\\
+					CPU 6 cores &  1.547 & 6.081 & 23.429 & 89.602 & 350.761 & 1350.470 & 5229.090 & 20683.325 & 84305.466 & 350425.495\\
+					CPU 7 cores &  1.538 & 5.044 & 20.425 & 82.377 & 322.066 & 1282.543 & 4918.743 & 19273.623 & 78993.126 & 325729.737\\
+					CPU 8 cores &  1.674 & 5.106 & 18.330 & 72.642 & 285.565 & 1178.308 & 4643.889 & 18259.532 & 72826.053 & 302954.399\\
+					\hline
+				\end{tabular}
+				
+				\caption[Table caption text]{Results of all tests, Times in Milliseconds\\
+					}
+				\label{table:results}
+			\end{minipage} }
+		}
+	\end{table}
+
+
+\figuremacroF
+{dispatchcmd}
+{Console output snippet from Dispatch Server}
+{Currently talking to ~150 Clients}
+{1.0}
+
+
+
+
+\end{document}
+
