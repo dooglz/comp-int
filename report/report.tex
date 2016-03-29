@@ -106,6 +106,13 @@ To obtain a fitness score for a solution, it must be decoded into a final schedu
 Discuss at least one previous published attempt at solving this or a similar problem. 
 Critically comment on the method used and results obtained.
 \lipsum[7]
+
+\figuremacroW
+{chart}
+{Disjunctive graph of a solution}
+{\cite{gao2011efficient}}
+{1.0}
+
 \cite{gonzalez2013efficient}
 
 \cite{gao2011efficient}
@@ -119,6 +126,7 @@ Critically comment on the method used and results obtained.
 \section{Methodology}
 Discuss the method(s) that you will use to solve the problem. 
 Describe the implementation used and any APIs/Libraries used to assist.
+
 \paragraph{Library Use}
 The Implementation was built on top of a provided utility library for generating random solutions, it was also used for solution validating and fitness calculation.\\
 The Apache HttpComponents Library, and Google's Gson Library were used in the network distribution code
@@ -150,14 +158,27 @@ This generation technique attempted to place the first operation of all job firs
 This solution generator would generate a pool of either random solutions, or solutions created by other generators and return the solution form the pool with the best fitness. The pool size could be adjusted, but it was found that a size of 128 worked best.
 
 \paragraph{Feasibility Optimised}
+In the paper by \cite{wang2012new}, a solution is considered feasible if every operation is scheduled either at the same time or after any prerequisite operations on other machines. In the paper, only solutions that are feasible are considered for fitness calculations. This report implements a method that attempts to turn any solution into a feasible solution, however not all problems can have a feasible solution, and not all solutions can be made 100\% feasible. If only feasible solutions are considered, then the total set of possible solutions is vastly reduced, however the algorithm in this report maintains enough variance that population diversity is still high enough for genetic evolution. 
 
-\lipsum[7]
+\figuremacroW
+{infeasible}
+{Disjunctive graph of an Infeasible solution}
+{\cite{wang2012new}}
+{1.0}
+\figuremacroW
+{good}
+{Disjunctive graph of the fixed feasible solution}
+{Notice how the operation order of the machines never heads to the left\cite{wang2012new}}
+{1.0}
+This solution uses a modified version of the Best Random generator, where each random solution is optimised before comparison.
 \subsection{Selection}
 
 \paragraph{Roulette Selection}
 \paragraph{Experimental Selection}
-Everybody with pairs with everybody above them
+The population is sorted by fitness, then each solution is paired with all solution with a lower fitness than itself.
+
 \paragraph{Tournament}
+A random selection of the population is taken, this is then sorted by fitness, and then the best solutions in this pool are paired together for crossover.
 
 \subsection{Crossover}
 \paragraph{Single and Multi-Point}
@@ -166,6 +187,7 @@ Everybody with pairs with everybody above them
 \paragraph{Partially Matched }
 \lipsum[7]
 \subsection{Mutation}
+\paragraph {Critical Path Mutation}
 \lipsum[7]
 \subsection{GE Structure}
 \lipsum[7]
