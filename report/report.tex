@@ -119,9 +119,9 @@ Critically comment on the method used and results obtained.
 \section{Methodology}
 Discuss the method(s) that you will use to solve the problem. 
 Describe the implementation used and any APIs/Libraries used to assist.
-\lipsum[7]
 \paragraph{Library Use}
-\paragraph{Fitness}
+The Implementation was built on top of a provided utility library for generating random solutions, it was also used for solution validating and fitness calculation.\\
+The Apache HttpComponents Library, and Google's Gson Library were used in the network distribution code
 
 \subsection{Implementation of Literature}
 \lipsum[7]
@@ -137,9 +137,33 @@ Figure \ref{fig:genalgrunning}
 \section{Experiment Plan}
 Present an experimental plan to be used to investigate your approach
 \lipsum[7]
-\subsection{Selection}
+\subsection{Initial population generation}
+A theory that was tested was that if the initial seed population was of a higher quality than a pure random population, then this would increase the efficiency of the overall evolution. Three new algorithms were created and another which generated random solutions and then optimised them with the Feasibility Algorithm were tested.
+
+\paragraph{Job Runtime Priority}
+This generation technique ordered jobs by their total runtime, and gave  scheduling priority to the longest running jobs. The theory behind this was that re-arranging smaller operations would always cause less disruption than moving large operations, so it may be beneficial to have the longest running operations in their most optimal place as soon as possible.
+
+\paragraph{Operation Order Priority}
+This generation technique attempted to place the first operation of all job first, followed by the second operation of all jobs until all operations were placed. The theory behind this was to aim to reduce machine idle time by reducing instances where operations were scheduled before there prerequisite operations were finished. This follows a similar concept to the feasibility optimisation algortihm, but without attempting to fix dependencies.
+
+\paragraph{Best Random / Best Hybrid}
+This solution generator would generate a pool of either random solutions, or solutions created by other generators and return the solution form the pool with the best fitness. The pool size could be adjusted, but it was found that a size of 128 worked best.
+
+\paragraph{Feasibility Optimised}
+
 \lipsum[7]
+\subsection{Selection}
+
+\paragraph{Roulette Selection}
+\paragraph{Experimental Selection}
+Everybody with pairs with everybody above them
+\paragraph{Tournament}
+
 \subsection{Crossover}
+\paragraph{Single and Multi-Point}
+\paragraph{Partially Matched }
+\paragraph{Machine Swap}
+\paragraph{Partially Matched }
 \lipsum[7]
 \subsection{Mutation}
 \lipsum[7]
