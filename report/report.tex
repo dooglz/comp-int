@@ -105,46 +105,25 @@ To obtain a fitness score for a solution, it must be decoded into a final schedu
 \section{Previous  Work}
 Discuss at least one previous published attempt at solving this or a similar problem. 
 Critically comment on the method used and results obtained.
-\lipsum[7]
-
 \figuremacroW
 {chart}
 {Disjunctive graph of a solution}
 {\cite{gao2011efficient}}
 {1.0}
 
-\cite{gonzalez2013efficient}
-
-\cite{gao2011efficient}
-
-\cite{zhang2011effective}
-
-\cite{driss2015effective}
-
-\cite{wang2012new}
-
 \section{Methodology}
-Discuss the method(s) that you will use to solve the problem. 
-Describe the implementation used and any APIs/Libraries used to assist.
 
 \paragraph{Library Use}
 The Implementation was built on top of a provided utility library for generating random solutions, it was also used for solution validating and fitness calculation.\\
 The Apache HttpComponents Library, and Google's Gson Library were used in the network distribution code
 
-\subsection{Implementation of Literature}
-\lipsum[7]
+\paragraph{Implementation of Literature}
+A mixture of various functions and techniques described by the literature were implemented and the effects of combining them into a working genetic algorithm was recorded.
 
 \subsection{Solution Quality Metrics}
+As the Genetic algorithm is running, a method was needed to easily gauge progress and to spot problems. This was achieved by calculating the average fitness of various percentile sections of the population, and printing this to the output every generation along with other statistics like the current best fitness and  best all time fitness.  Divergence is calculated by comparing the average fitness of the entire population compared to same average of the last generation.
 Figure \ref{fig:genalgrunning}
-\lipsum[7]
 
-\subsection{Distributed Calibration }
-\lipsum[7]
-
-
-\section{Experiment Plan}
-Present an experimental plan to be used to investigate your approach
-\lipsum[7]
 \subsection{Initial population generation}
 A theory that was tested was that if the initial seed population was of a higher quality than a pure random population, then this would increase the efficiency of the overall evolution. Three new algorithms were created and another which generated random solutions and then optimised them with the Feasibility Algorithm were tested.
 
@@ -152,7 +131,7 @@ A theory that was tested was that if the initial seed population was of a higher
 This generation technique ordered jobs by their total runtime, and gave  scheduling priority to the longest running jobs. The theory behind this was that re-arranging smaller operations would always cause less disruption than moving large operations, so it may be beneficial to have the longest running operations in their most optimal place as soon as possible.
 
 \paragraph{Operation Order Priority}
-This generation technique attempted to place the first operation of all job first, followed by the second operation of all jobs until all operations were placed. The theory behind this was to aim to reduce machine idle time by reducing instances where operations were scheduled before there prerequisite operations were finished. This follows a similar concept to the feasibility optimisation algortihm, but without attempting to fix dependencies.
+This generation technique attempted to place the first operation of all job first, followed by the second operation of all jobs until all operations were placed. The theory behind this was to aim to reduce machine idle time by reducing instances where operations were scheduled before there prerequisite operations were finished. This follows a similar concept to the feasibility optimisation algorithm, but without attempting to fix dependencies.
 
 \paragraph{Best Random / Best Hybrid}
 This solution generator would generate a pool of either random solutions, or solutions created by other generators and return the solution form the pool with the best fitness. The pool size could be adjusted, but it was found that a size of 128 worked best.
@@ -170,38 +149,79 @@ In the paper by \cite{wang2012new}, a solution is considered feasible if every o
 {Disjunctive graph of the fixed feasible solution}
 {Notice how the operation order of the machines never heads to the left\cite{wang2012new}}
 {1.0}
+
 This solution uses a modified version of the Best Random generator, where each random solution is optimised before comparison.
+
 \subsection{Selection}
+Three different methods of Selection were attempted.
 
 \paragraph{Roulette Selection}
+The population is sorted by fitness, the solutions with the best fitness have a higher chance of being selected for crossover.
+
 \paragraph{Experimental Selection}
-The population is sorted by fitness, then each solution is paired with all solutions that have  a lower fitness than itself.
+The population is sorted by fitness, then each solution is paired with all solutions that have a lower fitness than itself.
 
 \paragraph{Tournament}
 A random selection of the population is taken, this is then sorted by fitness, and then the best solutions in this pool are paired together for crossover.
 
 \subsection{Crossover}
+Five different crossover functions were implemented.
 \paragraph{Single and Multi-Point}
 A random machine ID is selected from the two solutions and then a crossover point is selected randomly from the list of operations, everything after this point is swapped over from the two solutions. For Multi-point, two random crossover points are selected and everything in-between them is swapped. This can create invalid solutions as there will be duplicate jobs within the job list, there are many different approaches to fixing this, the method used by thids report was to remove the duplicates and fill in the blanks with the missing job operations, ordered by the lowest operation I.
 
-
 \paragraph{Machine Swap}
+This method selects an entire set of operations from a machine and swaps it completely with the list from the corresponding machine in another solution. This has the benefit that a solution will always be valid, but the total amount of unique outcomes  for two input solutions is limited by the number of machines. This is used in the paper by \cite{wang2012new}
+
 \paragraph{Partially Matched }
-Two crossover points are selected at and the containing operations are swapped, similar to Multi-Point \cite{sivanandam2007introduction}
+Two crossover points are selected at and the containing operations are swapped, similar to Multi-Point Crossover. The positions of the operations in each matching swapped sections ar sued to form a lookup table, this is then used to replace duplicate operations.  \cite{sivanandam2007introduction}
+
+\paragraph{Liang Gao}
+This crossover follows a method described by \cite{gao2011efficient}. The set of jobs is split randomly into two sets. Jobs in set 1 are copied into the same position in child A as parent 1, and jobs in set 2 are copied into the same position in child B as Parent 2. Then the empty spaces are filled in according to the order of the opposing parent. Child A fills in the empty spaces according to the order of operations from Parent B, and Child B form Parent A. This is demonstrated in Figure \ref{fig:cx}. It is possible in certain situations that a child will be identical to the a parent, so this must be checked for if it is an undesirable outcome.
+
+\figuremacroW
+{cx}
+{Liang Gao Crossover}
+{Notice how Child B is identical to Parent 2}
+{1.0}
 
 \subsection{Mutation}
-\paragraph {Critical Path Mutation}
-\lipsum[7]
+\paragraph {Critical Path Mutation / Local search}
+If the critical path of a solution can be determined, the paper by \cite{gao2011efficient} describes a method wherein if two or more on the critical paths are placed consecutively on the same machine, then all permutations of the order of these operations is searched for fitness improvements. This was not implemented in this report as the complexity of determining the critical path was out of the scope of this investigation.
+
+\paragraph{Operation Mutation}
+This is theoretically the simplest form of Mutation, a random machine is picked, and then two of the operations within it are swapped. This was the mutation operator used in this investigation.
+
 \subsection{GE Structure}
-\lipsum[7]
+What happens when new children are returned, do they replace parents, or are they inserted into the population. Does the population size stay the same? Are only new children mutated, or does the entire population have a chance to mutate?
+
 \paragraph{Reset operation}
-\lipsum[7]
+If the population is seen to converge on a non-optimal solution, then the entire population is mutated and the top solutions are removed. The criterion for initiating a reset could be adjusted beforehand and during the operation of the GE.
+
+\paragraph{Live Parameter adjustment}
+Almost all of the parameters within the GA can be altered during runtime, different techniques were tried to couple the live population metrics to the GA parameters, such as increasing the amount of crossovers as overall fitness decreased, or increasing the total population size depending on population diversity.
+
 \subsection{Termination Procedure}
-\lipsum[7]
+While running an GA indefinitely until a lower bound is reached is a viable approach, this investigation required additional termination events to enable the analysis of the effectiveness of different GA parameters, in order to find the optimal settings for each different JSS problem. The additional termination events were based on: Total Time taken, Generation Count, and Population Diversity.
+
 \subsection{Distribution}
-\lipsum[7]
-\subsection{Final adjustments}
-\lipsum[7]
+To achieve data for the performance of GA parameters for each supplied JSS problem, the program was distributed over a network of computers. Each computer would ask for a set of parameters from a dispatch server, run the GA with these parameters and then return the results.
+
+\paragraph{Network system design}
+For the sake of simplicity the communication protocol used was HTTP, and the data encoding used was JSON. As JSON can easily be converted to and from Java objects. The dispatch server runs a simple HTTP web-server, listening for requests and sending GA parameters (known as WorkOrders in the implementation) to the worker. The worker then returns the result of the GA (WorkResponce) as HTTP POST data. This is stored in a results file by the dispatch server. 
+
+\paragraph{Work Management}
+The Dispatch server keeps track of which jobs have been dispatched and not returned, and will remove them from the list if they are not returned within a specific time limit. This means that if a worker crashes or goes offline and does not respond with a result, the same job will be resent to another worker at a later time. Each time a job is dispatched or returned the entire state is saved to disk, this means the dispatch server can be taken down and modified at any time.
+
+\paragraph{Job creation}
+The method for determining the parameters to send to a client could include an entirely separate genetic algorithm within itself. This was out of the scope for this project, so a very basic hill-climber approach was implemented. When an request for a job is received, the list of JSS problems is searched to see which has the fewest jobs completed, this is then passed ot a function which generates GA parameters for this problem. This function initially increases the population size and maximum generation limit for each run completed until completing a run would take too long. The next would be to then do a local-search around the best run to determine the best possible parameters for a given JSS problem.
+
+
+
+
+\section{Experiment Plan}
+Present an experimental plan to be used to investigate your approach
+
+
 
 \section{Results}
 Present your results along with a basic statistical analysis.
@@ -218,12 +238,9 @@ Present your results along with a basic statistical analysis.
 {Fitness 1496}
 {1.0}
 
-
-\lipsum[7]
 \section{Conclusions}
 Critically analyse and reflect on the approach that you have taken. How do your results compare to those published? If your results are not as good as envisaged would you adopt a different approach to solving the problem.
 
-\lipsum[7]
 
 \bibliographystyle{acmsiggraph}
 \bibliography{report}
