@@ -47,15 +47,20 @@ class Sentinel extends Thread {
     public Sentinel(DispatchServer ds) {
         this.ds = ds;
     }
-    public void Status(){
+
+
+    public String Status(boolean print) {
+        String ss = "";
         synchronized (ds.rundDataLock) {
             String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-            System.out.println("##" + timeStamp + " -- " + ds.rd.version);
+            ss+="##" + timeStamp + " -- " + ds.rd.version;
+            if(print){System.out.println("##" + timeStamp + " -- " + ds.rd.version);}
             int inflight = 0;
             int finished = 0;
             for (int i = 0; i < ds.rd.problems.length; i++) {
                 problemStat ps = ds.rd.problems[i];
-                System.out.println("Problem: "+ps.id+" LB:"+ps.lb+" Best Score:"+ps.bestScore+" Best Gen:"+ps.bestGen+" CR:"+ps.completeRuns+" SR:"+ps.stalledRuns+" rs:"+ps.runs.size());
+                ss+= "<br>Problem: " + ps.id + " LB:" + ps.lb + " Best Score:" + ps.bestScore + " Best Gen:" + ps.bestGen + " CR:" + ps.completeRuns + " SR:" + ps.stalledRuns + " rs:" + ps.runs.size();
+                if(print){System.out.println("Problem: " + ps.id + " LB:" + ps.lb + " Best Score:" + ps.bestScore + " Best Gen:" + ps.bestGen + " CR:" + ps.completeRuns + " SR:" + ps.stalledRuns + " rs:" + ps.runs.size());}
                 for (int j = 0; j < ps.runs.size(); j++) {
                     ProblemRun pr = ps.runs.get(j);
                     if (pr.result == null) {
@@ -65,8 +70,10 @@ class Sentinel extends Thread {
                     }
                 }
             }
-            System.out.println("Jobs in-flight: " + inflight + ", completed jobs: " + finished);
+            ss+="<br>Jobs in-flight: " + inflight + ", completed jobs: " + finished;
+            if(print){System.out.println("Jobs in-flight: " + inflight + ", completed jobs: " + finished);}
         }
+        return ss;
     }
 
     public void go() {
@@ -110,7 +117,7 @@ class Sentinel extends Thread {
                     if (pr.disaptchTime == 0) {
                         pr.disaptchTime = System.currentTimeMillis() - 100;
                     }
-                    if (pr.returnTime == 0 && System.currentTimeMillis() - pr.disaptchTime > 2500000) { //25 mins
+                    if (pr.returnTime == 0 && System.currentTimeMillis() - pr.disaptchTime > 3600000) { //25 mins
                         System.out.println("Job " + pr.disaptchID + "Took too long to return, resettting");
                         ps.runs.remove(pr);
                         j--;
@@ -123,10 +130,11 @@ class Sentinel extends Thread {
             ds.saveTofile(ds.rd);
         }
     }
-    public void Purge(){
+
+    public void Purge() {
         synchronized (ds.rundDataLock) {
             System.out.println(" Purging");
-           int p =0;
+            int p = 0;
             for (int i = 0; i < ds.rd.problems.length; i++) {
                 problemStat ps = ds.rd.problems[i];
                 for (int j = 0; j < ps.runs.size(); j++) {
@@ -144,7 +152,9 @@ class Sentinel extends Thread {
             System.out.println(" Purged:" + p);
         }
     }
+
     private boolean run;
+
     @Override
     public void run() {
         run = true;
@@ -160,7 +170,8 @@ class Sentinel extends Thread {
             go();
         }
     }
-    public void Stop(){
+
+    public void Stop() {
         run = false;
     }
 }
@@ -188,7 +199,7 @@ public class DispatchServer {
     public void HandleCmd(String cmd) {
         switch (cmd) {
             case "status":
-                sn.Status();
+                sn.Status(true);
                 break;
             case "clean":
                 sn.go();
@@ -245,9 +256,35 @@ public class DispatchServer {
 
                         Gson gson = new Gson();
                         workOrder wo = getNextJob();
-                        System.out.println("Dispatching Job: " + wo.dispatchID + " _ " + wo.params.problemID + " _ " + he.getRemoteAddress());
+                        System.out.println("Dispatching Job:\t" + wo.dispatchID + "\t " + wo.params.problemID + "\t "+ wo.params.popsize + "\t " + he.getRemoteAddress());
                         final String responseBody = gson.toJson(wo);
                         headers.set(HEADER_CONTENT_TYPE, String.format("application/json; charset=%s", CHARSET));
+                        final byte[] rawResponseBody = responseBody.getBytes(CHARSET);
+                        he.sendResponseHeaders(STATUS_OK, rawResponseBody.length);
+                        he.getResponseBody().write(rawResponseBody);
+                        break;
+                    case METHOD_OPTIONS:
+                        headers.set(HEADER_ALLOW, ALLOWED_METHODS);
+                        he.sendResponseHeaders(STATUS_OK, NO_RESPONSE_LENGTH);
+                        break;
+                    default:
+                        headers.set(HEADER_ALLOW, ALLOWED_METHODS);
+                        he.sendResponseHeaders(STATUS_METHOD_NOT_ALLOWED, NO_RESPONSE_LENGTH);
+                        break;
+                }
+            } finally {
+                he.close();
+            }
+        });
+        server.createContext("/", he -> {
+            try {
+                final Headers headers = he.getResponseHeaders();
+                final String requestMethod = he.getRequestMethod().toUpperCase();
+                switch (requestMethod) {
+                    case METHOD_GET:
+
+                        final String responseBody = sn.Status(false);
+                        headers.set(HEADER_CONTENT_TYPE, String.format("text/html; charset=%s", CHARSET));
                         final byte[] rawResponseBody = responseBody.getBytes(CHARSET);
                         he.sendResponseHeaders(STATUS_OK, rawResponseBody.length);
                         he.getResponseBody().write(rawResponseBody);
@@ -274,7 +311,7 @@ public class DispatchServer {
                 switch (requestMethod) {
                     case METHOD_POST:
                         final Map<String, String> postData = getPostData(he.getRequestBody());
-                        System.out.println("data Received from: " + he.getRemoteAddress());
+                        System.out.println("Data Received from: " + he.getRemoteAddress());
 
                         if (postData.get("data") != null) {
                             Gson gson = new Gson();
@@ -432,6 +469,32 @@ public class DispatchServer {
                 p.resetTrigger = 300;
                 p.tournamentMutateRange = 128;
                 return p;
+            } else if (ps.runs.get(0).returnTime != 0 && (ps.completeRuns > 0 || ps.stalledRuns > 20)) {
+                //Local searchtime
+                //find the bestrun
+                ProblemRun best = ps.runs.get(0);
+                for (int i = 0; i < ps.runs.size(); i++) {
+                    ProblemRun prb = ps.runs.get(i);
+                    if(prb.returnTime == 0){
+                        continue;
+                    }
+                    if (prb.result.bestScore < best.result.bestScore ||
+                            (prb.result.bestScore == best.result.bestScore
+                                    && prb.result.generation < best.result.generation)) {
+                        best = prb;
+                    }
+                }
+                //Mutate best
+                p.maxGen = best.params.maxGen + (int) (Math.random() * 20) - 10;
+                p.tournamentNewChilderenCount = best.params.tournamentNewChilderenCount + (int) (Math.random() * 4) - 2;
+                p.tournamentSampleSize = best.params.tournamentSampleSize + (int) (Math.random() * 8) - 6;
+                p.crossovermode = best.params.crossovermode + (int) (Math.random() * 4) - 2;
+                p.maxTime = best.params.maxTime;
+                p.popsize = best.params.popsize + (int) (Math.random() * 40) - 20;
+                p.seedRange = best.params.seedRange + (int) (Math.random() * 40) - 20;
+                p.resetTrigger = best.params.resetTrigger + (int) (Math.random() * 40) - 20;
+                p.tournamentMutateRange = best.params.tournamentMutateRange + (int) (Math.random() * 40) - 20;
+                return p;
             } else {
                 p.maxGen = 100 + (ps.runs.size() * 50);
                 p.tournamentNewChilderenCount = 4;
@@ -453,7 +516,7 @@ public class DispatchServer {
             ProblemRun pr = new ProblemRun();
             wo.dispatchID = (long) (Math.random() * ((double) Long.MAX_VALUE));
             problemStat ps;
-            if (Math.random() < 0.2) {
+            if (Math.random() < 0.1) {//small chance of just picking *any* job
                 ps = rd.problems[(int) Math.floor(Math.random() * ((double) rd.problems.length))];
             } else {
                 ps = rd.problems[0];
@@ -490,9 +553,12 @@ public class DispatchServer {
                         } else {
                             ps.stalledRuns++;
                         }
-                        ps.bestGen = Math.min(ps.bestGen, wr.result.generation);
-                        ps.bestScore = Math.min(ps.bestScore, wr.result.bestScore);
-                        System.out.println("WR " + wr.dispatchID + " returned, " + wr.result.result + " score: " + wr.result.bestScore + " (" + ps.lb + ") gen:" + wr.result.generation + " (" + ps.bestGen + ") Time:" + (pr.returnTime - pr.disaptchTime) + " pid:" + pr.params.problemID + " " + pr.params.popsize);
+                        if(wr.result.bestScore < ps.bestScore){
+                            ps.bestScore = wr.result.bestScore;
+                            ps.bestGen = wr.result.generation;
+                            System.out.println("-- New Best for Pid:"+ps.id+"\t Score:"+ps.bestScore+" (lb:"+ps.lb+")\t Gen:"+ps.bestGen);
+                        }
+                        System.out.println("WR " + wr.dispatchID + " returned, #" + wr.result.result + "# score: " + wr.result.bestScore + " (" + ps.lb + ") gen:" + wr.result.generation + " (" + ps.bestGen + ") Time:" + (pr.returnTime - pr.disaptchTime) + " pid:" + pr.params.problemID + " " + pr.params.popsize);
 
                         //
                         //update file
