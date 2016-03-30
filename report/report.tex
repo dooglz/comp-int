@@ -175,17 +175,20 @@ This solution uses a modified version of the Best Random generator, where each r
 
 \paragraph{Roulette Selection}
 \paragraph{Experimental Selection}
-The population is sorted by fitness, then each solution is paired with all solution with a lower fitness than itself.
+The population is sorted by fitness, then each solution is paired with all solutions that have  a lower fitness than itself.
 
 \paragraph{Tournament}
 A random selection of the population is taken, this is then sorted by fitness, and then the best solutions in this pool are paired together for crossover.
 
 \subsection{Crossover}
 \paragraph{Single and Multi-Point}
-\paragraph{Partially Matched }
+A random machine ID is selected from the two solutions and then a crossover point is selected randomly from the list of operations, everything after this point is swapped over from the two solutions. For Multi-point, two random crossover points are selected and everything in-between them is swapped. This can create invalid solutions as there will be duplicate jobs within the job list, there are many different approaches to fixing this, the method used by thids report was to remove the duplicates and fill in the blanks with the missing job operations, ordered by the lowest operation I.
+
+
 \paragraph{Machine Swap}
 \paragraph{Partially Matched }
-\lipsum[7]
+Two crossover points are selected at and the containing operations are swapped, similar to Multi-Point \cite{sivanandam2007introduction}
+
 \subsection{Mutation}
 \paragraph {Critical Path Mutation}
 \lipsum[7]
