@@ -59,8 +59,8 @@ class Sentinel extends Thread {
             int finished = 0;
             for (int i = 0; i < ds.rd.problems.length; i++) {
                 problemStat ps = ds.rd.problems[i];
-                ss+= "<br>Problem: " + ps.id + " LB:" + ps.lb + " Best Score:" + ps.bestScore + " Best Gen:" + ps.bestGen + " CR:" + ps.completeRuns + " SR:" + ps.stalledRuns + " rs:" + ps.runs.size();
-                if(print){System.out.println("Problem: " + ps.id + " LB:" + ps.lb + " Best Score:" + ps.bestScore + " Best Gen:" + ps.bestGen + " CR:" + ps.completeRuns + " SR:" + ps.stalledRuns + " rs:" + ps.runs.size());}
+                ss+= "<br>Problem: " + ps.id + "\t LB:" + ps.lb + "\t Best Score:" + ps.bestScore + "\t Best Gen:" + ps.bestGen + "\t CR:" + ps.completeRuns + "\t SR:" + ps.stalledRuns + "\t rs:" + ps.runs.size();
+                if(print){System.out.println("Problem: " + ps.id + "\t LB:" + ps.lb + "\t Best Score:" + ps.bestScore + "\t Best Gen:" + ps.bestGen + "\t CR:" + ps.completeRuns + "\t SR:" + ps.stalledRuns + "\t rs:" + ps.runs.size());}
                 for (int j = 0; j < ps.runs.size(); j++) {
                     ProblemRun pr = ps.runs.get(j);
                     if (pr.result == null) {
@@ -70,8 +70,8 @@ class Sentinel extends Thread {
                     }
                 }
             }
-            ss+="<br>Jobs in-flight: " + inflight + ", completed jobs: " + finished;
-            if(print){System.out.println("Jobs in-flight: " + inflight + ", completed jobs: " + finished);}
+            ss+="<br>Jobs in-flight: " + inflight + "\t Completed jobs: " + finished;
+            if(print){System.out.println("Jobs in-flight: " + inflight + "\t Completed jobs: " + finished);}
         }
         return ss;
     }
@@ -117,8 +117,8 @@ class Sentinel extends Thread {
                     if (pr.disaptchTime == 0) {
                         pr.disaptchTime = System.currentTimeMillis() - 100;
                     }
-                    if (pr.returnTime == 0 && System.currentTimeMillis() - pr.disaptchTime > 3600000) { //25 mins
-                        System.out.println("Job " + pr.disaptchID + "Took too long to return, resettting");
+                    if (pr.returnTime == 0 && System.currentTimeMillis() - pr.disaptchTime > 5200000) { //25 mins
+                        System.out.println("Job " + pr.disaptchID + " Pid:"+ps.id+" Took too long to return, resettting");
                         ps.runs.remove(pr);
                         j--;
                     }
@@ -311,7 +311,7 @@ public class DispatchServer {
                 switch (requestMethod) {
                     case METHOD_POST:
                         final Map<String, String> postData = getPostData(he.getRequestBody());
-                        System.out.println("Data Received from: " + he.getRemoteAddress());
+                        System.out.println("Data Received from:\t" + he.getRemoteAddress());
 
                         if (postData.get("data") != null) {
                             Gson gson = new Gson();
@@ -545,7 +545,7 @@ public class DispatchServer {
             //System.out.println("parsing new WR " + wr.dispatchID);
             for (problemStat ps : rd.problems) {
                 for (ProblemRun pr : ps.runs) {
-                    if (pr.disaptchID == wr.dispatchID) {
+                    if (pr.returnTime == 0 && pr.disaptchID == wr.dispatchID) {
                         pr.returnTime = System.currentTimeMillis();
                         pr.result = wr.result;
                         if (wr.result.result.equals("done")) {
@@ -556,7 +556,7 @@ public class DispatchServer {
                         if(wr.result.bestScore < ps.bestScore){
                             ps.bestScore = wr.result.bestScore;
                             ps.bestGen = wr.result.generation;
-                            System.out.println("-- New Best for Pid:"+ps.id+"\t Score:"+ps.bestScore+" (lb:"+ps.lb+")\t Gen:"+ps.bestGen);
+                            System.out.println("\n-- New Best for Pid:"+ps.id+"\t Score:"+ps.bestScore+" (lb:"+ps.lb+")\t Gen:"+ps.bestGen);
                         }
                         System.out.println("WR " + wr.dispatchID + " returned, #" + wr.result.result + "# score: " + wr.result.bestScore + " (" + ps.lb + ") gen:" + wr.result.generation + " (" + ps.bestGen + ") Time:" + (pr.returnTime - pr.disaptchTime) + " pid:" + pr.params.problemID + " " + pr.params.popsize);
 
