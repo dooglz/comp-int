@@ -1,5 +1,6 @@
 package dooglz;
 
+import modelP.JSSP;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -83,18 +84,26 @@ public class Main {
                 w.start();
             }
         } else {
-            //passthrough
+            int pid = 1;
+            da = new DispatchServer();
+            GenAlgParams params = da.getBestforPid(pid);
+            params.maxTime = 90000;
+            params.seedRange = Math.min(params.seedRange,20);
+           // params.popsize = Math.min(params.popsize,200);
             //GenAlgParams params = new GenAlgParams(32, 128, 10, 128, 200, 55, 1024, 5, 119, 3000, 600000);
-            //GeneticAlgorithm ga = new GeneticAlgorithm(params);
-            //GenAlgResult res = ga.Start();
-            //System.out.println("\n########\n" + res.result + "\t Score:" + res.bestScore + "\t Gen: " + res.generation + "\t Time: " + res.runtime);
+            GeneticAlgorithm ga = new GeneticAlgorithm(params);
+            GenAlgResult res = ga.Start();
+            System.out.println("\n########\n" + res.result + "\t Score:" + res.bestScore + "\t Gen: " + res.generation + "\t Time: " + res.runtime);
 
             //DProblem Dprob = new DProblem();
             //DSolution ds = new DSolution(Dprob,Dprob.machineCount,Dprob.jobCount);
-            // ds = DSolution.getRand(Dprob,false,0,0);
-            //   JSSP.printSolution(ds.sol,Dprob.pProblem);
-            //     String filename = JSSP.saveSolution(ds.sol,Dprob.pProblem);
-            //       JSSP.displaySolution(filename);
+             //ds = DSolution.getRand(Dprob,false,0,0);
+
+
+            modelP.Problem pp =  JSSP.getProblem(params.problemID);
+            JSSP.printSolution(res.sol.sol,pp);
+            String filename = JSSP.saveSolution(res.sol.sol,pp);
+            JSSP.displaySolution(filename);
 
 
         }

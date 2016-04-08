@@ -42,4 +42,5 @@ public class GenAlgParams {
         this.resetTrigger = 300;
         this.tournamentMutateRange = 128;
     }
+
 }

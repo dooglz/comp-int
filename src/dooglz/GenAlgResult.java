@@ -6,6 +6,7 @@ public class GenAlgResult {
     public int bestScore;
     public int generation;
     public long runtime;
+    public DSolution sol;
 
     public GenAlgResult(String result, int bestScore, int generation, long runtime) {
         this.result = result;

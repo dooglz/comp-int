@@ -117,11 +117,11 @@ class Sentinel extends Thread {
                     if (pr.disaptchTime == 0) {
                         pr.disaptchTime = System.currentTimeMillis() - 100;
                     }
-                    if (pr.returnTime == 0 && System.currentTimeMillis() - pr.disaptchTime > 5200000) { //25 mins
+                   /* if (pr.returnTime == 0 && System.currentTimeMillis() - pr.disaptchTime > 5200000) { //25 mins
                         System.out.println("Job " + pr.disaptchID + " Pid:"+ps.id+" Took too long to return, resettting");
                         ps.runs.remove(pr);
                         j--;
-                    }
+                    }*/
                 }
             }
             System.out.println("Jobs in-flight: " + inflight + ", completed jobs: " + finished);
@@ -178,6 +178,37 @@ class Sentinel extends Thread {
 
 
 public class DispatchServer {
+
+
+    public GenAlgParams getBestforPid(int pid){
+        synchronized (rundDataLock) {
+            for (int kk = 0; kk < rd.problems.length; kk++) {
+                if(rd.problems[kk].id == pid){
+                    problemStat ps = rd.problems[kk];
+                    ProblemRun best = ps.runs.get(0);
+                    for (int i = 0; i < ps.runs.size(); i++) {
+                        ProblemRun prb = ps.runs.get(i);
+                        if(prb.returnTime == 0 || prb.params.problemID != pid){
+                            continue;
+                        }
+                        if (prb.result.bestScore < best.result.bestScore ||
+                                (prb.result.bestScore == best.result.bestScore
+                                        && prb.result.generation < best.result.generation)) {
+                            best = prb;
+                        }
+                    }
+                    System.out.println("The best params for PID: "+pid+" is:" + best.disaptchID + " -- " + best.result.result);
+                    System.out.println("Mg: "+best.params.maxGen+" Ps: "+best.params.popsize+" TSS: "+best.params.tournamentSampleSize+ " SR: "+best.params.seedRange);
+                    System.out.println("It achieved "+best.result.bestScore+" at gen "+best.result.generation + " In: "+ util.msToString(best.result.runtime));
+                    return best.params;
+                }
+            }
+        }
+        System.out.println("Cuoldn't find best params for pid: "+pid);
+        return null;
+    }
+
+
     public static final Object rundDataLock = new Object();
     private static final String HOSTNAME = "localhost";
     private static final int PORT = 8080;

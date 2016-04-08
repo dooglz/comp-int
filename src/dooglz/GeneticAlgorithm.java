@@ -49,7 +49,7 @@ public class GeneticAlgorithm {
         DSolution population[] = new DSolution[p.popsize];
 
         for (int i = 0; i < p.popsize; i++) {
-            if (i % 64 == 0) {
+            if (i % 16 == 0) {
                 System.out.println(currentThread().getId() + " PreGen " + i * 100 / p.popsize + "%");
             }
             population[i] = DSolution.getRand(problem, true, p.seedRange, p.goal);
@@ -138,7 +138,9 @@ public class GeneticAlgorithm {
                 gta /= generationTimeAverage.length;
                 //evaluate ending
                 if (improvement == 0 && da == 0 && i > 10) {
-                    return new GenAlgResult("stall", bestever, i, System.currentTimeMillis() - startTime);
+                    GenAlgResult gr = new GenAlgResult("stall", bestever, i, System.currentTimeMillis() - startTime);
+                    gr.sol = population[0];
+                    return gr;
                 }
                 System.out.print(currentThread().getId() + " Run: " + i + " BestEver: " + bestever + " Top:" + best + " avg10:" + avg10 + " avg25:" + avg25 + " avg50:" + avg50 + " avg:" + avg);
                 System.out.print(" improvement: " + improvement + "\tdivergence:" + divergence + "\tdivavg:" + da + "\tresets:" + resets + "\tGenTime:" + gta);
@@ -147,10 +149,14 @@ public class GeneticAlgorithm {
             }
             //evaluate ending
             if ((i > p.maxGen) || (System.currentTimeMillis() - startTime) > p.maxTime) {
-                return new GenAlgResult("stall", bestever, i, System.currentTimeMillis() - startTime);
+                GenAlgResult gr = new GenAlgResult("stall", bestever, i, System.currentTimeMillis() - startTime);
+                gr.sol = population[0];
+                return gr;
             }
         }
-        return new GenAlgResult("stall", bestever, i, System.currentTimeMillis() - startTime);
+        GenAlgResult gr = new GenAlgResult("stall", bestever, i, System.currentTimeMillis() - startTime);
+        gr.sol = population[0];
+        return gr;
         //return new GenAlgResult("stall",bestever,0);
     }
 
