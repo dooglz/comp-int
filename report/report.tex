@@ -100,7 +100,7 @@ A solution to a JSSP problem is implemented in code as a 2D array, with each row
 The rows of a solution array form the chromosomes to be processed by the evolutionary algorithm. Each row is a set of all the available Job IDs, and therefore any permutation of this set is a valid solution. 
 
 \paragraph{Comparing solutions}
-To obtain a fitness score for a solution, it must be decoded into a final schedule. This process involves determining the start and end time for processing operations on each machine. To do this, the order of operations in the solution is followed for each machine until an operation cannot be scheduled due to a non-complete pre-requite operation, in this case the machine will sit idle until the operation can be processed. Once this process is finished, te total runtime can be determined and used as a fitness value. Other metrics could also be used for fitness (e.g maximum Idle time, or concurrent machine occupancy), but this report only uses runtime to compare solutions.
+To obtain a fitness score for a solution, it must be decoded into a final schedule. This process involves determining the start and end time for processing operations on each machine. To do this, the order of operations in the solution is followed for each machine until an operation cannot be scheduled due to a non-complete pre-requite operation, in this case the machine will sit idle until the operation can be processed. Once this process is finished, the total runtime can be determined and used as a fitness value. Other metrics could also be used for fitness (e.g maximum Idle time, or concurrent machine occupancy), but this report only uses runtime to compare solutions.
 
 \section{Previous  Work}
 Discuss at least one previous published attempt at solving this or a similar problem. 
@@ -112,17 +112,18 @@ Critically comment on the method used and results obtained.
 {1.0}
 
 \section{Methodology}
+The method for designing an effective GA was to implement and experiment with a section of different Crossover/Mutation/GA structure/Solution Generation techniques, some from the literature and some original for this report.
 
 \paragraph{Library Use}
 The Implementation was built on top of a provided utility library for generating random solutions, it was also used for solution validating and fitness calculation.\\
 The Apache HttpComponents Library, and Google's Gson Library were used in the network distribution code
 
 \paragraph{Implementation of Literature}
-%%A mixture of various functions and techniques described by the literature were implemented and the effects of combining them into a working genetic algorithm was recorded.
+A mixture of various functions and techniques described by the literature were implemented and the effects of combining them into a working genetic algorithm was recorded.
 
 \subsection{Solution Quality Metrics}
 As the Genetic algorithm is running, a method was needed to easily gauge progress and to spot problems. This was achieved by calculating the average fitness of various percentile sections of the population, and printing this to the output every generation along with other statistics like the current best fitness and  best all time fitness.  Divergence is calculated by comparing the average fitness of the entire population compared to same average of the last generation.
-Figure \ref{fig:genalgrunning}
+See Figure \ref{fig:genalgrunning} for a sample output.
 
 \subsection{Initial population generation}
 A theory that was tested was that if the initial seed population was of a higher quality than a pure random population, then this would increase the efficiency of the overall evolution. Three new algorithms were created and another which generated random solutions and then optimised them with the Feasibility Algorithm were tested.
@@ -167,16 +168,16 @@ A random selection of the population is taken, this is then sorted by fitness, a
 \subsection{Crossover}
 Five different crossover functions were implemented.
 \paragraph{Single and Multi-Point}
-A random machine ID is selected from the two solutions and then a crossover point is selected randomly from the list of operations, everything after this point is swapped over from the two solutions. For Multi-point, two random crossover points are selected and everything in-between them is swapped. This can create invalid solutions as there will be duplicate jobs within the job list, there are many different approaches to fixing this, the method used by thids report was to remove the duplicates and fill in the blanks with the missing job operations, ordered by the lowest operation I.
+A random machine ID is selected from the two solutions and then a crossover point is selected randomly from the list of operations, everything after this point is swapped over from the two solutions. For Multi-point, two random crossover points are selected and everything in-between them is swapped. This can create invalid solutions as there will be duplicate jobs within the job list, there are many different approaches to fixing this, the method used by this report was to remove the duplicates and fill in the blanks with the missing job operations, ordered by the lowest operation ID.
 
 \paragraph{Machine Swap}
 This method selects an entire set of operations from a machine and swaps it completely with the list from the corresponding machine in another solution. This has the benefit that a solution will always be valid, but the total amount of unique outcomes  for two input solutions is limited by the number of machines. This is used in the paper by \cite{wang2012new}
 
 \paragraph{Partially Matched }
-Two crossover points are selected at and the containing operations are swapped, similar to Multi-Point Crossover. The positions of the operations in each matching swapped sections ar sued to form a lookup table, this is then used to replace duplicate operations.  \cite{sivanandam2007introduction}
+Two crossover points are selected and the containing operations are swapped, similar to Multi-Point Crossover. The positions of the operations in each matching swapped sections are used to form a lookup table, this is then used to replace duplicate operations.  \cite{sivanandam2007introduction}
 
 \paragraph{Liang Gao}
-This crossover follows a method described by \cite{gao2011efficient}. The set of jobs is split randomly into two sets. Jobs in set 1 are copied into the same position in child A as parent 1, and jobs in set 2 are copied into the same position in child B as Parent 2. Then the empty spaces are filled in according to the order of the opposing parent. Child A fills in the empty spaces according to the order of operations from Parent B, and Child B form Parent A. This is demonstrated in Figure \ref{fig:cx}. It is possible in certain situations that a child will be identical to the a parent, so this must be checked for if it is an undesirable outcome.
+This crossover follows a method described by \cite{gao2011efficient}. The set of jobs is split randomly into two sets. Jobs in set 1 are copied into the same position in child A as parent 1, and jobs in set 2 are copied into the same position in child B as Parent 2. Then the empty spaces are filled in according to the order of the opposing parent. Child A fills in the empty spaces according to the order of operations from Parent B, and Child B from Parent A. This is demonstrated in Figure \ref{fig:cx}. It is possible in certain situations that a child will be identical to the a parent, so this must be checked for if it is an undesirable outcome.
 
 \figuremacroW
 {cx}
@@ -186,18 +187,30 @@ This crossover follows a method described by \cite{gao2011efficient}. The set of
 
 \subsection{Mutation}
 \paragraph {Critical Path Mutation / Local search}
-If the critical path of a solution can be determined, the paper by \cite{gao2011efficient} describes a method wherein if two or more on the critical paths are placed consecutively on the same machine, then all permutations of the order of these operations is searched for fitness improvements. This was not implemented in this report as the complexity of determining the critical path was out of the scope of this investigation.
+If the critical path of a solution can be determined, the paper by \cite{gao2011efficient} describes a method wherein if two or more operations on the critical paths are placed consecutively on the same machine, then all permutations of the order of these operations is searched for fitness improvements. This was not implemented in this report as the complexity of determining the critical path was out of the scope for this investigation.
 
 \paragraph{Operation Mutation}
 This is theoretically the simplest form of Mutation, a random machine is picked, and then two of the operations within it are swapped. This was the mutation operator used in this investigation.
 
-\subsection{GE Structure}
-What happens when new children are returned, do they replace parents, or are they inserted into the population. Does the population size stay the same? Are only new children mutated, or does the entire population have a chance to mutate?
+\subsection{GA Structure}
+There are many large decisions and small nuances to consider when designing a GA, mainly to do with handling the population. The implementation of this report tried out several different GA structures, the difference are detailed below. 
+
+\paragraph{Child Placement}
+When new children are generated, do they replace their parents or are they inserted into the population along with their parents? Replacing parents can overwrite good solutions, and keeping parents decreases diversity.
+
+\paragraph{Population Size}
+The size of the population is also an area which can have great effect on the performance fo the GA, too small and there will not be enough diversity, too large and the rate of improvement will drop and the processing time for each generation may become infeasible. If the population size is to be kept constant which members are removed when the size increases?
+
+\paragraph{Mutation}
+The  mutation operations could apply only to new children as they are generated, or the entire/subset of the population could be mutated every generation.
+
+\paragraph{Duplicate Solutions}
+This is simply to decide whether duplicate identical solutions are allowed in the population. Ensuring no duplicates is a substantial and time consuming task, on the other hand, clones can quickly reduce diversity and cause early convergence.
 
 \paragraph{Reset operation}
-If the population is seen to converge on a non-optimal solution, then the entire population is mutated and the top solutions are removed. The criterion for initiating a reset could be adjusted beforehand and during the operation of the GE.
+If the population is seen to converge on a non-optimal solution, then the entire population is mutated and the top solutions are removed. This could be  used as a technique to escape from a local maximum without fully restarting the algorithm for scratch. The criterion for initiating a reset could be adjusted beforehand and during the operation of the GE.
 
-\paragraph{Live Parameter adjustment}
+\subsection{Live Parameter adjustment}
 Almost all of the parameters within the GA can be altered during runtime, different techniques were tried to couple the live population metrics to the GA parameters, such as increasing the amount of crossovers as overall fitness decreased, or increasing the total population size depending on population diversity.
 
 \subsection{Termination Procedure}
@@ -213,7 +226,7 @@ For the sake of simplicity the communication protocol used was HTTP, and the dat
 The Dispatch server keeps track of which jobs have been dispatched and not returned, and will remove them from the list if they are not returned within a specific time limit. This means that if a worker crashes or goes offline and does not respond with a result, the same job will be resent to another worker at a later time. Each time a job is dispatched or returned the entire state is saved to disk, this means the dispatch server can be taken down and modified at any time.
 
 \paragraph{Job creation}
-The method for determining the parameters to send to a client could include an entirely separate genetic algorithm within itself. This was out of the scope for this project, so a very basic hill-climber approach was implemented. When an request for a job is received, the list of JSS problems is searched to see which has the fewest jobs completed, this is then passed ot a function which generates GA parameters for this problem. This function initially increases the population size and maximum generation limit for each run completed until completing a run would take too long. The next would be to then do a local-search around the best run to determine the best possible parameters for a given JSS problem.
+The method for determining the parameters to send to a client could include an entirely separate genetic algorithm within itself. This was out of the scope for this project, so a very basic hill-climber approach was implemented. When an request for a job is received, the list of JSS problems is searched to see which has the fewest jobs completed, this is then passed ot a function which generates GA parameters for this problem. This function initially increases the population size and maximum generation limit for each run completed until completing a run would take too long. It then takes the best run so far and randomly mutates it until a better set of parameters is found.
 
 
 
