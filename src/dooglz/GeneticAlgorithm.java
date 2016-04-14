@@ -96,7 +96,10 @@ public class GeneticAlgorithm {
 
             if (bestever <= p.goal) {
                 System.out.println(currentThread().getId() + " BEST SOLUTION FOUND! Generation: " + i + " score:" + bestever+ " goal: "+p.goal+ " ");
-                return new GenAlgResult("done", bestever, i, System.currentTimeMillis() - startTime);
+                GenAlgResult gr = new GenAlgResult("done", bestever, i, System.currentTimeMillis() - startTime);
+                gr.sol = population[0];
+                return gr;
+
             }
 
             if (ob != best || i % 25 == 0) {

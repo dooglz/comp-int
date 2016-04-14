@@ -87,9 +87,10 @@ public class Main {
             int pid = 1;
             da = new DispatchServer();
             GenAlgParams params = da.getBestforPid(pid);
-            params.maxTime = 90000;
+            params.maxTime = 120000;
+            //params.goal = 55;
             params.seedRange = Math.min(params.seedRange,20);
-           // params.popsize = Math.min(params.popsize,200);
+           // params.popsize = Math.min(params.popsize,800);
             //GenAlgParams params = new GenAlgParams(32, 128, 10, 128, 200, 55, 1024, 5, 119, 3000, 600000);
             GeneticAlgorithm ga = new GeneticAlgorithm(params);
             GenAlgResult res = ga.Start();
