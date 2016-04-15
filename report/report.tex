@@ -127,17 +127,17 @@
 	This report closely follows the work by Ren Qing-dao-er-ji and Yuping Wang in their paper "A new hybrid genetic algorithm for job shop scheduling problem" \cite{wang2012new}. This report closely follows the structure of the documented GA with additional algorithms described in other papers.
 	
 	\paragraph{Concentration based selection}
-	The paper defines a method complex method of Gauging the similarity between two solutions, this is used in conjunction with a fitness value when selecting form the population for crossover. This is used to reduce early convergence. 
+	The paper defines a complex method of Gauging the similarity between two solutions, this is used in conjunction with a fitness value when selecting form the population for crossover. This is used to reduce early convergence. 
 	
 	\paragraph{Critical Path Mutation}
-	A method of mutating a solution based on the critical path was used, this is documented later (section \ref{mutmethods}), this specific algorithm was out fo scope for this project but would have been the first to implemented in future work as the results provided in the paper seem very promising.
+	A method of mutating a solution based on the critical path was used, this is documented later (section \ref{mutmethods}), this specific algorithm was out of scope for this project but would have been the first to implemented in future work as the results provided in the paper seem very promising.
 	
 	\paragraph{Local Search}
 	The paper describes using a limited local search operator after mutation to increase the quality of the new child solutions, this was implemented in this project and it was found to be highly beneficial to the performance of the GA.
 	
 	\paragraph{Results}
-	The results sown in the paper are some of the best in the field, other attempts have been shown alongside for  comparison.
-	A criticism is that (along with many other papers on this subject) only the generation count is recorded, without any time measures. The specifications of the hardware are given, but not how long the proposed total algorithm will take. Additionally, the 
+	The results shown in the paper are some of the best in the field, other attempts have been shown alongside for  comparison.
+	A criticism is that (along with many other papers on this subject) only the generation count is recorded, without any time measures. The specifications of the hardware are given, but not how long the proposed total algorithm will take.
 	
 	\section{Methodology}
 	The method for designing an effective GA was to implement and experiment with a section of different Crossover/Mutation/GA structure/Solution Generation techniques, some from the literature and some original for this report.
@@ -266,7 +266,7 @@
 	\section{Results}
 	%Present your results along with a basic statistical analysis.
 	\subsection{Population Generation}
-		Using both Job runtime and operation order priority population generation did give a significant boost to the fitness of the first generation. However the amount of possible solutions they can generate is limited and thereafter they must fall back to randomness and therefore the befit of their use is limited and does not scale.\\
+		Using both Job runtime and operation order priority population generation did give a significant boost to the fitness of the first generation. However the amount of possible solutions they can generate is limited and thereafter they must fall back to randomness and therefore the benefit of their use is limited and does not scale.\\
 		Using Feasibility optimised solutions for the initial population gave an extreme boost to solution quality, which carried over into many generation in the GA. For some problems the lower bound would be found in the initial population without running the GA at all. The algorithm is expensive to run, but the benefits vastly outlay this cost. A visual representation of the results of the algorithm is shown in Figure: \ref{fig:p100rnd} \& Figure: \ref{fig:p100rndopt} .
 	
 	\subsection{Feasibility Optimisations}
