@@ -18,6 +18,14 @@
 		\label{fig:#1}
 	\end{figure}
 }
+\newcommand{\figuremacroWH}[4]{
+	\begin{figure}[h!] %[htbp]
+		\centering
+		\includegraphics[width=#4\columnwidth]{#1}
+		\caption[#2]{\textbf{#2} - #3}
+		\label{fig:#1}
+	\end{figure}
+}
 
 \newcommand{\figuremacroF}[4]{
 	\begin{figure*}[t] % [htbp]
@@ -105,11 +113,33 @@ To obtain a fitness score for a solution, it must be decoded into a final schedu
 \section{Previous  Work}
 Discuss at least one previous published attempt at solving this or a similar problem. 
 Critically comment on the method used and results obtained.
-\figuremacroW
+
+Using GAs to solve the JSSP has been documented in multiple papers, each taking a different approach to optimise different parts of the GA process. As this is a permutation based problem with multiple constraints, the solutions which provide algorithms that are more tailored to fit the specifically JSSP rather than a general permutation problem seem to get the best results.
+
+\paragraph{Visualising Solutions}
+\figuremacroWH
 {chart}
 {Disjunctive graph of a solution}
 {\cite{gao2011efficient}}
 {1.0}
+
+A common technique taken by many articles is to represent JSSP solutions visually using a Disjunctive graph, this can communicate the order of operations within a job, which machine an operation is on, the order of operations for each machine, and also the critical path.
+
+\paragraph{Chosen Reference Paper}
+This report closely follows the work by Ren Qing-dao-er-ji and Yuping Wang in their paper "A new hybrid genetic algorithm for job shop scheduling problem" \cite{wang2012new}. This report closely follows the structure of the documented GA with additional algorithms described in other papers.
+
+\paragraph{Concentration based selection}
+The paper defines a method complex method of Gauging the similarity between two solutions, this is used in conjunction with a fitness value when selecting form the population for crossover. This is used to reduce early convergence. 
+
+\paragraph{Critical Path Mutation}
+A method of mutating a solution based on the critical path was used, this is documented later (section \ref{mutmethods}), this specific algorithm was out fo scope for this project but would have been the first to implemented in future work as the results provided in the paper seem very promising.
+
+\paragraph{Local Search}
+The paper describes using a limited local search operator after mutation to increase the quality of the new child solutions, this was implemented in this project and it was found to be highly beneficial to the performance of the GA.
+
+\paragraph{Results}
+The results sown in the paper are some of the best in the field, other attempts have been shown alongside for  comparison.
+A criticism is that (along with many other papers on this subject) only the generation count is recorded, without any time measures. The specifications of the hardware are given, but not how long the proposed total algorithm will take. Additionally, the 
 
 \section{Methodology}
 The method for designing an effective GA was to implement and experiment with a section of different Crossover/Mutation/GA structure/Solution Generation techniques, some from the literature and some original for this report.
@@ -185,7 +215,7 @@ This crossover follows a method described by \cite{gao2011efficient}. The set of
 {Notice how Child B is identical to Parent 2}
 {1.0}
 
-\subsection{Mutation}
+\subsection{Mutation}\label{mutmethods}
 \paragraph {Critical Path Mutation / Local search}
 If the critical path of a solution can be determined, the paper by \cite{gao2011efficient} describes a method wherein if two or more operations on the critical paths are placed consecutively on the same machine, then all permutations of the order of these operations is searched for fitness improvements. This was not implemented in this report as the complexity of determining the critical path was out of the scope for this investigation.
 
