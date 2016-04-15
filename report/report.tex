@@ -260,7 +260,11 @@
 	The method for determining the parameters to send to a client could include an entirely separate genetic algorithm within itself. This was out of the scope for this project, so a very basic hill-climber approach was implemented. When an request for a job is received, the list of JSS problems is searched to see which has the fewest jobs completed, this is then passed ot a function which generates GA parameters for this problem. This function initially increases the population size and maximum generation limit for each run completed until completing a run would take too long. It then takes the best run so far and randomly mutates it until a better set of parameters is found.
 	
 	\section{Experiment Plan}
-	Present an experimental plan to be used to investigate your approach
+	%Present an experimental plan to be used to investigate your approach
+	The plan for the implementation was to first get the basic structure of a GA running with a basic single point crossover and simple mutation. In these early stage, creating a method for measuring the performance of the GA was crucial as this needed to be implemented before nay improvements could be made. \\
+	Once the performance measures where in place, additional algorithms could be implemented, as described in the Methodology section. The performance should be tuned based on a small set of problems initially for quick iteration times, problems 86,101, and 95 were chosen for use during the implementation stage.\\
+	After the specified functions and algorithms were implemented, the code should be analysed and experimented upon to increase performance and solution quality.\\
+	
 	
 	\section{Results}
 	Present your results along with a basic statistical analysis.
@@ -404,7 +408,7 @@
 					99  & 1222 & 20X5   & \cellcolor[rgb]{0.46,0.69,0.29}1253 & 8   & 521  & 20.13 \\
 					\underline{\textbf{100}} & 1039 & 20X5   & \cellcolor[rgb]{0.43,0.67,0.27}1039 & 0   & 128  & 0.04  \\
 					101 & 1150 & 20X5   & \cellcolor[rgb]{0.43,0.67,0.27}1150 & 10  & 78   & 0.03  \\
-				\underline{\textbf{102}} & 1292 & 20X5   & \cellcolor[rgb]{0.43,0.67,0.27}1292 & 0   & 128  & 0.03  \\
+					\underline{\textbf{102}} & 1292 & 20X5   & \cellcolor[rgb]{0.43,0.67,0.27}1292 & 0   & 128  & 0.03  \\
 					103 & 1207 & 20X5   & \cellcolor[rgb]{0.45,0.68,0.28}1225 & 24  & 1178 & 20.33 \\
 					104 & 717  & 10X10  & \cellcolor[rgb]{0.9,0.87,0.47}1014  & 18  & 379  & 20.13 \\
 					105 & 683  & 10X10  & \cellcolor[rgb]{0.85,0.85,0.45}939  & 8   & 365  & 20.10 \\
