@@ -83,7 +83,8 @@ public class Main {
                 w = new worker();
                 w.start();
             }
-        } else {
+        }else{
+            //passthrough Mode
             int pid = 1;
             da = new DispatchServer();
             GenAlgParams params = da.getBestforPid(pid);

@@ -48,19 +48,23 @@ class Sentinel extends Thread {
         this.ds = ds;
     }
 
-
-    public String Status(boolean print) {
+    public String CSV(boolean print) {
         String ss = "";
         synchronized (ds.rundDataLock) {
             String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-            ss+="##" + timeStamp + " -- " + ds.rd.version;
-            if(print){System.out.println("##" + timeStamp + " -- " + ds.rd.version);}
+            ss += "##" + timeStamp + " -- " + ds.rd.version;
+            ss += "\nPid,lb,jobs,machines,score,gen,CR,SR,TR,Bpop,Btime";
             int inflight = 0;
             int finished = 0;
             for (int i = 0; i < ds.rd.problems.length; i++) {
                 problemStat ps = ds.rd.problems[i];
-                ss+= "<br>Problem: " + ps.id + "\t LB:" + ps.lb + "\t Best Score:" + ps.bestScore + "\t Best Gen:" + ps.bestGen + "\t CR:" + ps.completeRuns + "\t SR:" + ps.stalledRuns + "\t rs:" + ps.runs.size();
-                if(print){System.out.println("Problem: " + ps.id + "\t LB:" + ps.lb + "\t Best Score:" + ps.bestScore + "\t Best Gen:" + ps.bestGen + "\t CR:" + ps.completeRuns + "\t SR:" + ps.stalledRuns + "\t rs:" + ps.runs.size());}
+                DProblem dp = new DProblem(JSSP.getProblem(ps.id));
+                ss += "\n" + ps.id + "," + ps.lb + "," + dp.jobCount + "," + dp.machineCount;
+                ss += "," + ps.bestScore + "," + ps.bestGen + "," + ps.completeRuns + "," + ps.stalledRuns + "," + ps.runs.size();
+                ProblemRun prb = ds.getBestRunForPS(ps);
+                if (prb != null) {
+                    ss += "," + prb.params.popsize + "," + (prb.returnTime - prb.disaptchTime);
+                }
                 for (int j = 0; j < ps.runs.size(); j++) {
                     ProblemRun pr = ps.runs.get(j);
                     if (pr.result == null) {
@@ -70,8 +74,42 @@ class Sentinel extends Thread {
                     }
                 }
             }
-            ss+="<br>Jobs in-flight: " + inflight + "\t Completed jobs: " + finished;
-            if(print){System.out.println("Jobs in-flight: " + inflight + "\t Completed jobs: " + finished);}
+        }
+        if (print) {
+            System.out.println(ss);
+        }
+        return ss;
+    }
+
+    public String Status(boolean print) {
+        String ss = "";
+        synchronized (ds.rundDataLock) {
+            String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+            ss += "##" + timeStamp + " -- " + ds.rd.version;
+            if (print) {
+                System.out.println("##" + timeStamp + " -- " + ds.rd.version);
+            }
+            int inflight = 0;
+            int finished = 0;
+            for (int i = 0; i < ds.rd.problems.length; i++) {
+                problemStat ps = ds.rd.problems[i];
+                ss += "<br>Problem: " + ps.id + "\t LB:" + ps.lb + "\t Best Score:" + ps.bestScore + "\t Best Gen:" + ps.bestGen + "\t CR:" + ps.completeRuns + "\t SR:" + ps.stalledRuns + "\t rs:" + ps.runs.size();
+                if (print) {
+                    System.out.println("Problem: " + ps.id + "\t LB:" + ps.lb + "\t Best Score:" + ps.bestScore + "\t Best Gen:" + ps.bestGen + "\t CR:" + ps.completeRuns + "\t SR:" + ps.stalledRuns + "\t rs:" + ps.runs.size());
+                }
+                for (int j = 0; j < ps.runs.size(); j++) {
+                    ProblemRun pr = ps.runs.get(j);
+                    if (pr.result == null) {
+                        inflight++;
+                    } else {
+                        finished++;
+                    }
+                }
+            }
+            ss += "<br>Jobs in-flight: " + inflight + "\t Completed jobs: " + finished;
+            if (print) {
+                System.out.println("Jobs in-flight: " + inflight + "\t Completed jobs: " + finished);
+            }
         }
         return ss;
     }
@@ -178,34 +216,46 @@ class Sentinel extends Thread {
 
 
 public class DispatchServer {
+    public ProblemRun getBestRunForPS(problemStat ps) {
+        synchronized (rundDataLock) {
+            if (ps.runs.size() < 1) {
+                return null;
+            }
+            ProblemRun best = ps.runs.get(0);
+            for (int i = 0; i < ps.runs.size(); i++) {
+                ProblemRun prb = ps.runs.get(i);
+                if (prb.returnTime == 0 || prb.params.problemID != ps.id) {
+                    continue;
+                }
+                if (prb.result.bestScore < best.result.bestScore ||
+                        (prb.result.bestScore == best.result.bestScore
+                                && prb.result.generation < best.result.generation)) {
+                    best = prb;
+                }
+            }
+            return best;
+        }
+    }
 
-
-    public GenAlgParams getBestforPid(int pid){
+    public ProblemRun getBestRunForPid(int pid) {
         synchronized (rundDataLock) {
             for (int kk = 0; kk < rd.problems.length; kk++) {
-                if(rd.problems[kk].id == pid){
-                    problemStat ps = rd.problems[kk];
-                    ProblemRun best = ps.runs.get(0);
-                    for (int i = 0; i < ps.runs.size(); i++) {
-                        ProblemRun prb = ps.runs.get(i);
-                        if(prb.returnTime == 0 || prb.params.problemID != pid){
-                            continue;
-                        }
-                        if (prb.result.bestScore < best.result.bestScore ||
-                                (prb.result.bestScore == best.result.bestScore
-                                        && prb.result.generation < best.result.generation)) {
-                            best = prb;
-                        }
-                    }
-                    System.out.println("The best params for PID: "+pid+" is:" + best.disaptchID + " -- " + best.result.result);
-                    System.out.println("Mg: "+best.params.maxGen+" Ps: "+best.params.popsize+" TSS: "+best.params.tournamentSampleSize+ " SR: "+best.params.seedRange);
-                    System.out.println("It achieved "+best.result.bestScore+" at gen "+best.result.generation + " In: "+ util.msToString(best.result.runtime));
-                    return best.params;
+                if (rd.problems[kk].id == pid) {
+                    return getBestRunForPS(rd.problems[kk]);
                 }
             }
         }
-        System.out.println("Cuoldn't find best params for pid: "+pid);
         return null;
+    }
+
+    public GenAlgParams getBestforPid(int pid) {
+        synchronized (rundDataLock) {
+            ProblemRun best = getBestRunForPid(pid);
+            System.out.println("The best params for PID: " + pid + " is:" + best.disaptchID + " -- " + best.result.result);
+            System.out.println("Mg: " + best.params.maxGen + " Ps: " + best.params.popsize + " TSS: " + best.params.tournamentSampleSize + " SR: " + best.params.seedRange);
+            System.out.println("It achieved " + best.result.bestScore + " at gen " + best.result.generation + " In: " + util.msToString(best.result.runtime));
+            return best.params;
+        }
     }
 
 
@@ -231,6 +281,9 @@ public class DispatchServer {
         switch (cmd) {
             case "status":
                 sn.Status(true);
+                break;
+            case "csv":
+                sn.CSV(true);
                 break;
             case "clean":
                 sn.go();
@@ -287,7 +340,7 @@ public class DispatchServer {
 
                         Gson gson = new Gson();
                         workOrder wo = getNextJob();
-                        System.out.println("Dispatching Job:\t" + wo.dispatchID + "\t " + wo.params.problemID + "\t "+ wo.params.popsize + "\t " + he.getRemoteAddress());
+                        System.out.println("Dispatching Job:\t" + wo.dispatchID + "\t " + wo.params.problemID + "\t " + wo.params.popsize + "\t " + he.getRemoteAddress());
                         final String responseBody = gson.toJson(wo);
                         headers.set(HEADER_CONTENT_TYPE, String.format("application/json; charset=%s", CHARSET));
                         final byte[] rawResponseBody = responseBody.getBytes(CHARSET);
@@ -315,6 +368,31 @@ public class DispatchServer {
                     case METHOD_GET:
 
                         final String responseBody = sn.Status(false);
+                        headers.set(HEADER_CONTENT_TYPE, String.format("text/html; charset=%s", CHARSET));
+                        final byte[] rawResponseBody = responseBody.getBytes(CHARSET);
+                        he.sendResponseHeaders(STATUS_OK, rawResponseBody.length);
+                        he.getResponseBody().write(rawResponseBody);
+                        break;
+                    case METHOD_OPTIONS:
+                        headers.set(HEADER_ALLOW, ALLOWED_METHODS);
+                        he.sendResponseHeaders(STATUS_OK, NO_RESPONSE_LENGTH);
+                        break;
+                    default:
+                        headers.set(HEADER_ALLOW, ALLOWED_METHODS);
+                        he.sendResponseHeaders(STATUS_METHOD_NOT_ALLOWED, NO_RESPONSE_LENGTH);
+                        break;
+                }
+            } finally {
+                he.close();
+            }
+        });
+        server.createContext("/csv", he -> {
+            try {
+                final Headers headers = he.getResponseHeaders();
+                final String requestMethod = he.getRequestMethod().toUpperCase();
+                switch (requestMethod) {
+                    case METHOD_GET:
+                        final String responseBody = sn.CSV(false);
                         headers.set(HEADER_CONTENT_TYPE, String.format("text/html; charset=%s", CHARSET));
                         final byte[] rawResponseBody = responseBody.getBytes(CHARSET);
                         he.sendResponseHeaders(STATUS_OK, rawResponseBody.length);
@@ -506,7 +584,7 @@ public class DispatchServer {
                 ProblemRun best = ps.runs.get(0);
                 for (int i = 0; i < ps.runs.size(); i++) {
                     ProblemRun prb = ps.runs.get(i);
-                    if(prb.returnTime == 0){
+                    if (prb.returnTime == 0) {
                         continue;
                     }
                     if (prb.result.bestScore < best.result.bestScore ||
@@ -584,10 +662,10 @@ public class DispatchServer {
                         } else {
                             ps.stalledRuns++;
                         }
-                        if(wr.result.bestScore < ps.bestScore){
+                        if (wr.result.bestScore < ps.bestScore) {
                             ps.bestScore = wr.result.bestScore;
                             ps.bestGen = wr.result.generation;
-                            System.out.println("\n-- New Best for Pid:"+ps.id+"\t Score:"+ps.bestScore+" (lb:"+ps.lb+")\t Gen:"+ps.bestGen);
+                            System.out.println("\n-- New Best for Pid:" + ps.id + "\t Score:" + ps.bestScore + " (lb:" + ps.lb + ")\t Gen:" + ps.bestGen);
                         }
                         System.out.println("WR " + wr.dispatchID + " returned, #" + wr.result.result + "# score: " + wr.result.bestScore + " (" + ps.lb + ") gen:" + wr.result.generation + " (" + ps.bestGen + ") Time:" + (pr.returnTime - pr.disaptchTime) + " pid:" + pr.params.problemID + " " + pr.params.popsize);
 

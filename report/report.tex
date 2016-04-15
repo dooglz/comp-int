@@ -1,4 +1,3 @@
-
 \documentclass[14pt]{acmsiggraph}
 %% all this is for Arial
 \usepackage[english]{babel}
@@ -8,6 +7,8 @@
 %%%%%%
 \usepackage{titlesec}
 \usepackage{graphicx}
+\usepackage[table]{xcolor}
+\usepackage{subfigure}
 \graphicspath{{./images/}}
 
 \newcommand{\figuremacroW}[4]{
@@ -84,259 +85,384 @@
 \title{Using Evolutionary Algorithms for Job Shop Scheduling}
 
 \author{Sam Serrels\\\ 40082367@napier.ac.uk \\
-Edinburgh Napier University\\
-Computational Intelligence (SET10107)}
+	Edinburgh Napier University\\
+	Computational Intelligence (SET10107)}
 \pdfauthor{Sam Serrels}
 
 \keywords{Evolutionary Algorithms, Genetiv Algorithms, Java, Job Shop}
 
 \begin{document}
-
-\maketitle
-\begin{abstract}
-	This report documents the implementation and tuning of an Evolutionary Algorithm in Java to solve a set of Job Shop Scheduling Problems. Computing optimal solutions for JSS problems in an NP-Hard task, therefore a brute-force approach is out of the question for problems with large sets of jobs. Evolutionary approaches have been proven to produce good and even optimal solutions in a reactively amount of time, this report implements an EA method using components describes by the literature, and then analyses the solutions produced and the different methods of reaching them.
-\end{abstract}
-
-\section{Introduction}
-\paragraph{JSSP}
-A Job Shop Scheduling Problem is made up of a set of Machines and Jobs, each Job contains a set of operations that must be processed in order and sequentially. The  Operations must be processed by a specific machine, each machine can only process one operation from one job at a time. Each Operation will utilise a machine for a pre-determined amount of time  A solution to the problem takes the form of a list stating the order of operations for each machine so that all jobs are completed in the shortest amount of time possible. This report uses a common simplified version of JSSP wherein each Job has the same amount of operations as there are machines, so that every job will use every machine exactly once.
-
-\paragraph{Encoding for Genetic Evolution}
-A solution to a JSSP problem is implemented in code as a 2D array, with each row representing a machine, and each column representing a Job, ordered by the order in which they should be processed. It should be noted that a machine processes an operation, not a job, but as each job only has one operation per machine, the corresponding job can be found trivially and so Job IDs can be used to simplify the implementation. The encoding does not encode the time of execution, only the order.  It is the job of the fitness function when decoding the solution to determine \textit{when} each operation is processed, abiding by the operation prerequisites and machine occupancy constrains. 
-
-\paragraph{Evolving a Solution}
-The rows of a solution array form the chromosomes to be processed by the evolutionary algorithm. Each row is a set of all the available Job IDs, and therefore any permutation of this set is a valid solution. 
-
-\paragraph{Comparing solutions}
-To obtain a fitness score for a solution, it must be decoded into a final schedule. This process involves determining the start and end time for processing operations on each machine. To do this, the order of operations in the solution is followed for each machine until an operation cannot be scheduled due to a non-complete pre-requite operation, in this case the machine will sit idle until the operation can be processed. Once this process is finished, the total runtime can be determined and used as a fitness value. Other metrics could also be used for fitness (e.g maximum Idle time, or concurrent machine occupancy), but this report only uses runtime to compare solutions.
-
-\section{Previous  Work}
-Discuss at least one previous published attempt at solving this or a similar problem. 
-Critically comment on the method used and results obtained.
-
-Using GAs to solve the JSSP has been documented in multiple papers, each taking a different approach to optimise different parts of the GA process. As this is a permutation based problem with multiple constraints, the solutions which provide algorithms that are more tailored to fit the specifically JSSP rather than a general permutation problem seem to get the best results.
-
-\paragraph{Visualising Solutions}
-\figuremacroWH
-{chart}
-{Disjunctive graph of a solution}
-{\cite{gao2011efficient}}
-{1.0}
-
-A common technique taken by many articles is to represent JSSP solutions visually using a Disjunctive graph, this can communicate the order of operations within a job, which machine an operation is on, the order of operations for each machine, and also the critical path.
-
-\paragraph{Chosen Reference Paper}
-This report closely follows the work by Ren Qing-dao-er-ji and Yuping Wang in their paper "A new hybrid genetic algorithm for job shop scheduling problem" \cite{wang2012new}. This report closely follows the structure of the documented GA with additional algorithms described in other papers.
-
-\paragraph{Concentration based selection}
-The paper defines a method complex method of Gauging the similarity between two solutions, this is used in conjunction with a fitness value when selecting form the population for crossover. This is used to reduce early convergence. 
-
-\paragraph{Critical Path Mutation}
-A method of mutating a solution based on the critical path was used, this is documented later (section \ref{mutmethods}), this specific algorithm was out fo scope for this project but would have been the first to implemented in future work as the results provided in the paper seem very promising.
-
-\paragraph{Local Search}
-The paper describes using a limited local search operator after mutation to increase the quality of the new child solutions, this was implemented in this project and it was found to be highly beneficial to the performance of the GA.
-
-\paragraph{Results}
-The results sown in the paper are some of the best in the field, other attempts have been shown alongside for  comparison.
-A criticism is that (along with many other papers on this subject) only the generation count is recorded, without any time measures. The specifications of the hardware are given, but not how long the proposed total algorithm will take. Additionally, the 
-
-\section{Methodology}
-The method for designing an effective GA was to implement and experiment with a section of different Crossover/Mutation/GA structure/Solution Generation techniques, some from the literature and some original for this report.
-
-\paragraph{Library Use}
-The Implementation was built on top of a provided utility library for generating random solutions, it was also used for solution validating and fitness calculation.\\
-The Apache HttpComponents Library, and Google's Gson Library were used in the network distribution code
-
-\paragraph{Implementation of Literature}
-A mixture of various functions and techniques described by the literature were implemented and the effects of combining them into a working genetic algorithm was recorded.
-
-\subsection{Solution Quality Metrics}
-As the Genetic algorithm is running, a method was needed to easily gauge progress and to spot problems. This was achieved by calculating the average fitness of various percentile sections of the population, and printing this to the output every generation along with other statistics like the current best fitness and  best all time fitness.  Divergence is calculated by comparing the average fitness of the entire population compared to same average of the last generation.
-See Figure \ref{fig:genalgrunning} for a sample output.
-
-\subsection{Initial population generation}
-A theory that was tested was that if the initial seed population was of a higher quality than a pure random population, then this would increase the efficiency of the overall evolution. Three new algorithms were created and another which generated random solutions and then optimised them with the Feasibility Algorithm were tested.
-
-\paragraph{Job Runtime Priority}
-This generation technique ordered jobs by their total runtime, and gave  scheduling priority to the longest running jobs. The theory behind this was that re-arranging smaller operations would always cause less disruption than moving large operations, so it may be beneficial to have the longest running operations in their most optimal place as soon as possible.
-
-\paragraph{Operation Order Priority}
-This generation technique attempted to place the first operation of all job first, followed by the second operation of all jobs until all operations were placed. The theory behind this was to aim to reduce machine idle time by reducing instances where operations were scheduled before there prerequisite operations were finished. This follows a similar concept to the feasibility optimisation algorithm, but without attempting to fix dependencies.
-
-\paragraph{Best Random / Best Hybrid}
-This solution generator would generate a pool of either random solutions, or solutions created by other generators and return the solution form the pool with the best fitness. The pool size could be adjusted, but it was found that a size of 128 worked best.
-
-\paragraph{Feasibility Optimised}
-In the paper by \cite{wang2012new}, a solution is considered feasible if every operation is scheduled either at the same time or after any prerequisite operations on other machines. In the paper, only solutions that are feasible are considered for fitness calculations. This report implements a method that attempts to turn any solution into a feasible solution, however not all problems can have a feasible solution, and not all solutions can be made 100\% feasible. If only feasible solutions are considered, then the total set of possible solutions is vastly reduced, however the algorithm in this report maintains enough variance that population diversity is still high enough for genetic evolution. 
-
-\figuremacroW
-{infeasible}
-{Disjunctive graph of an Infeasible solution}
-{\cite{wang2012new}}
-{1.0}
-\figuremacroW
-{good}
-{Disjunctive graph of the fixed feasible solution}
-{Notice how the operation order of the machines never heads to the left\cite{wang2012new}}
-{1.0}
-
-This solution uses a modified version of the Best Random generator, where each random solution is optimised before comparison.
-
-\subsection{Selection}
-Three different methods of Selection were attempted.
-
-\paragraph{Roulette Selection}
-The population is sorted by fitness, the solutions with the best fitness have a higher chance of being selected for crossover.
-
-\paragraph{Experimental Selection}
-The population is sorted by fitness, then each solution is paired with all solutions that have a lower fitness than itself.
-
-\paragraph{Tournament}
-A random selection of the population is taken, this is then sorted by fitness, and then the best solutions in this pool are paired together for crossover.
-
-\subsection{Crossover}
-Five different crossover functions were implemented.
-\paragraph{Single and Multi-Point}
-A random machine ID is selected from the two solutions and then a crossover point is selected randomly from the list of operations, everything after this point is swapped over from the two solutions. For Multi-point, two random crossover points are selected and everything in-between them is swapped. This can create invalid solutions as there will be duplicate jobs within the job list, there are many different approaches to fixing this, the method used by this report was to remove the duplicates and fill in the blanks with the missing job operations, ordered by the lowest operation ID.
-
-\paragraph{Machine Swap}
-This method selects an entire set of operations from a machine and swaps it completely with the list from the corresponding machine in another solution. This has the benefit that a solution will always be valid, but the total amount of unique outcomes  for two input solutions is limited by the number of machines. This is used in the paper by \cite{wang2012new}
-
-\paragraph{Partially Matched }
-Two crossover points are selected and the containing operations are swapped, similar to Multi-Point Crossover. The positions of the operations in each matching swapped sections are used to form a lookup table, this is then used to replace duplicate operations.  \cite{sivanandam2007introduction}
-
-\paragraph{Liang Gao}
-This crossover follows a method described by \cite{gao2011efficient}. The set of jobs is split randomly into two sets. Jobs in set 1 are copied into the same position in child A as parent 1, and jobs in set 2 are copied into the same position in child B as Parent 2. Then the empty spaces are filled in according to the order of the opposing parent. Child A fills in the empty spaces according to the order of operations from Parent B, and Child B from Parent A. This is demonstrated in Figure \ref{fig:cx}. It is possible in certain situations that a child will be identical to the a parent, so this must be checked for if it is an undesirable outcome.
-
-\figuremacroW
-{cx}
-{Liang Gao Crossover}
-{Notice how Child B is identical to Parent 2}
-{1.0}
-
-\subsection{Mutation}\label{mutmethods}
-\paragraph {Critical Path Mutation / Local search}
-If the critical path of a solution can be determined, the paper by \cite{gao2011efficient} describes a method wherein if two or more operations on the critical paths are placed consecutively on the same machine, then all permutations of the order of these operations is searched for fitness improvements. This was not implemented in this report as the complexity of determining the critical path was out of the scope for this investigation.
-
-\paragraph{Operation Mutation}
-This is theoretically the simplest form of Mutation, a random machine is picked, and then two of the operations within it are swapped. This was the mutation operator used in this investigation.
-
-\subsection{GA Structure}
-There are many large decisions and small nuances to consider when designing a GA, mainly to do with handling the population. The implementation of this report tried out several different GA structures, the difference are detailed below. 
-
-\paragraph{Child Placement}
-When new children are generated, do they replace their parents or are they inserted into the population along with their parents? Replacing parents can overwrite good solutions, and keeping parents decreases diversity.
-
-\paragraph{Population Size}
-The size of the population is also an area which can have great effect on the performance fo the GA, too small and there will not be enough diversity, too large and the rate of improvement will drop and the processing time for each generation may become infeasible. If the population size is to be kept constant which members are removed when the size increases?
-
-\paragraph{Mutation}
-The  mutation operations could apply only to new children as they are generated, or the entire/subset of the population could be mutated every generation.
-
-\paragraph{Duplicate Solutions}
-This is simply to decide whether duplicate identical solutions are allowed in the population. Ensuring no duplicates is a substantial and time consuming task, on the other hand, clones can quickly reduce diversity and cause early convergence.
-
-\paragraph{Reset operation}
-If the population is seen to converge on a non-optimal solution, then the entire population is mutated and the top solutions are removed. This could be  used as a technique to escape from a local maximum without fully restarting the algorithm for scratch. The criterion for initiating a reset could be adjusted beforehand and during the operation of the GE.
-
-\subsection{Live Parameter adjustment}
-Almost all of the parameters within the GA can be altered during runtime, different techniques were tried to couple the live population metrics to the GA parameters, such as increasing the amount of crossovers as overall fitness decreased, or increasing the total population size depending on population diversity.
-
-\subsection{Termination Procedure}
-While running an GA indefinitely until a lower bound is reached is a viable approach, this investigation required additional termination events to enable the analysis of the effectiveness of different GA parameters, in order to find the optimal settings for each different JSS problem. The additional termination events were based on: Total Time taken, Generation Count, and Population Diversity.
-
-\subsection{Distribution}
-To achieve data for the performance of GA parameters for each supplied JSS problem, the program was distributed over a network of computers. Each computer would ask for a set of parameters from a dispatch server, run the GA with these parameters and then return the results.
-
-\paragraph{Network system design}
-For the sake of simplicity the communication protocol used was HTTP, and the data encoding used was JSON. As JSON can easily be converted to and from Java objects. The dispatch server runs a simple HTTP web-server, listening for requests and sending GA parameters (known as WorkOrders in the implementation) to the worker. The worker then returns the result of the GA (WorkResponce) as HTTP POST data. This is stored in a results file by the dispatch server. 
-
-\paragraph{Work Management}
-The Dispatch server keeps track of which jobs have been dispatched and not returned, and will remove them from the list if they are not returned within a specific time limit. This means that if a worker crashes or goes offline and does not respond with a result, the same job will be resent to another worker at a later time. Each time a job is dispatched or returned the entire state is saved to disk, this means the dispatch server can be taken down and modified at any time.
-
-\paragraph{Job creation}
-The method for determining the parameters to send to a client could include an entirely separate genetic algorithm within itself. This was out of the scope for this project, so a very basic hill-climber approach was implemented. When an request for a job is received, the list of JSS problems is searched to see which has the fewest jobs completed, this is then passed ot a function which generates GA parameters for this problem. This function initially increases the population size and maximum generation limit for each run completed until completing a run would take too long. It then takes the best run so far and randomly mutates it until a better set of parameters is found.
-
-
-
-
-\section{Experiment Plan}
-Present an experimental plan to be used to investigate your approach
-
-
-
-\section{Results}
-Present your results along with a basic statistical analysis.
-
-\subsection{Feasibility Optimisations}
-\figuremacroW
-{p100rnd}
-{Problem 100, Random Solution}
-{Fitness 2471}
-{1.0}
-\figuremacroW
-{p100rndopt}
-{Problem 100, Random Solution, Optimised}
-{Fitness 1496}
-{1.0}
-
-\section{Conclusions}
-Critically analyse and reflect on the approach that you have taken. How do your results compare to those published? If your results are not as good as envisaged would you adopt a different approach to solving the problem.
-
-
-\bibliographystyle{acmsiggraph}
-\bibliography{report}
-
-
-\section{Appendix}
-\clearpage
-\begin{table}[b]
-	{
-		\centering
-		\resizebox{1.0\textwidth}{!}{
-			\begin{minipage}{\textwidth}
-				\centering
-				\begin{tabular}{p{1.4cm}|cccccccccc}
-					Test& 1024 & 2048 & 4096 & 8192 & 16384 & 32768 & 65536 & 131072 & 262144 & 524288\\ \hline \\
-					GTX980 512 & 0.233 & 0.321 & 0.652 & 1.145 & 1.974 & 9.219 & 36.789 & 135.558 & 500.509 & 2100.374\\
-					GTX980 256 & 0.222 & 0.307 & 0.612 & 1.065 & 1.937 & 9.162 & 34.392 & 134.494 & 489.240 & 2051.084\\
-					GTX980 128 & 0.132 & 0.194 & 0.296 & 0.716 & 1.891 & 8.721 & 53.158 & 120.636 & 471.306 & 1902.573\\
-					GTX980 64 & 0.132 & 0.172 & 0.277 & 0.645 & 1.862 & 7.259 & 31.745 & 118.255 & 451.687 & 1901.846\\
-					GTX980 32 & 0.110 & 0.157 & 0.289 & 0.640 & 1.833 & 7.255 & 28.108 & 116.337 & 451.348 & 1899.133\\
-					GTX980 16 & 0.150 & 0.224 & 0.464 & 1.468 & 3.561 & 13.522 & 63.056 & 222.645 & 917.328 & 0.000\\
-					\hline\\
-					CPU 1 core &  4.898 & 19.137 & 74.248 & 296.022 & 1185.570 & 4798.358 & 19412.055 & 76464.740 & 314798.033 & 1227484.000\\
-					CPU 2 cores &  2.510 & 9.825 & 39.221 & 155.133 & 613.820 & 2451.838 & 9838.845 & 40324.536 & 167580.294 & 797311.542\\
-					CPU 3 cores &  2.180 & 9.193 & 31.041 & 119.769 & 455.580 & 1821.591 & 7185.361 & 27788.974 & 115910.695 & 496237.950\\
-					CPU 4 cores &  1.674 & 7.044 & 22.304 & 98.299 & 410.325 & 1597.991 & 5535.962 & 21020.147 & 95596.342 & 377586.191\\
-					CPU 5 cores &  2.018 & 6.930 & 25.998 & 89.877 & 375.376 & 1455.549 & 5624.133 & 22419.623 & 92536.925 & 366961.358\\
-					CPU 6 cores &  1.547 & 6.081 & 23.429 & 89.602 & 350.761 & 1350.470 & 5229.090 & 20683.325 & 84305.466 & 350425.495\\
-					CPU 7 cores &  1.538 & 5.044 & 20.425 & 82.377 & 322.066 & 1282.543 & 4918.743 & 19273.623 & 78993.126 & 325729.737\\
-					CPU 8 cores &  1.674 & 5.106 & 18.330 & 72.642 & 285.565 & 1178.308 & 4643.889 & 18259.532 & 72826.053 & 302954.399\\
-					\hline
-				\end{tabular}
-				
-				\caption[Table caption text]{Results of all tests, Times in Milliseconds\\
-					}
-				\label{table:results}
-			\end{minipage} }
-		}
+	
+	\maketitle
+	\begin{abstract}
+		This report documents the implementation and tuning of an Evolutionary Algorithm in Java to solve a set of Job Shop Scheduling Problems. Computing optimal solutions for JSS problems in an NP-Hard task, therefore a brute-force approach is out of the question for problems with large sets of jobs. Evolutionary approaches have been proven to produce good and even optimal solutions in a reactively amount of time, this report implements an EA method using components describes by the literature, and then analyses the solutions produced and the different methods of reaching them.
+	\end{abstract}
+	
+	\section{Introduction}
+	\paragraph{JSSP}
+	A Job Shop Scheduling Problem is made up of a set of Machines and Jobs, each Job contains a set of operations that must be processed in order and sequentially. The  Operations must be processed by a specific machine, each machine can only process one operation from one job at a time. Each Operation will utilise a machine for a pre-determined amount of time  A solution to the problem takes the form of a list stating the order of operations for each machine so that all jobs are completed in the shortest amount of time possible. This report uses a common simplified version of JSSP wherein each Job has the same amount of operations as there are machines, so that every job will use every machine exactly once.
+	
+	\paragraph{Encoding for Genetic Evolution}
+	A solution to a JSSP problem is implemented in code as a 2D array, with each row representing a machine, and each column representing a Job, ordered by the order in which they should be processed. It should be noted that a machine processes an operation, not a job, but as each job only has one operation per machine, the corresponding job can be found trivially and so Job IDs can be used to simplify the implementation. The encoding does not encode the time of execution, only the order.  It is the job of the fitness function when decoding the solution to determine \textit{when} each operation is processed, abiding by the operation prerequisites and machine occupancy constrains. 
+	
+	\paragraph{Evolving a Solution}
+	The rows of a solution array form the chromosomes to be processed by the evolutionary algorithm. Each row is a set of all the available Job IDs, and therefore any permutation of this set is a valid solution. 
+	
+	\paragraph{Comparing solutions}
+	To obtain a fitness score for a solution, it must be decoded into a final schedule. This process involves determining the start and end time for processing operations on each machine. To do this, the order of operations in the solution is followed for each machine until an operation cannot be scheduled due to a non-complete pre-requite operation, in this case the machine will sit idle until the operation can be processed. Once this process is finished, the total runtime can be determined and used as a fitness value. Other metrics could also be used for fitness (e.g maximum Idle time, or concurrent machine occupancy), but this report only uses runtime to compare solutions.
+	
+	\section{Previous  Work}
+	Discuss at least one previous published attempt at solving this or a similar problem. 
+	Critically comment on the method used and results obtained.
+	
+	Using GAs to solve the JSSP has been documented in multiple papers, each taking a different approach to optimise different parts of the GA process. As this is a permutation based problem with multiple constraints, the solutions which provide algorithms that are more tailored to fit the specifically JSSP rather than a general permutation problem seem to get the best results.
+	
+	\paragraph{Visualising Solutions}
+	\figuremacroWH
+	{chart}
+	{Disjunctive graph of a solution}
+	{\cite{gao2011efficient}}
+	{1.0}
+	
+	A common technique taken by many articles is to represent JSSP solutions visually using a Disjunctive graph, this can communicate the order of operations within a job, which machine an operation is on, the order of operations for each machine, and also the critical path.
+	
+	\paragraph{Chosen Reference Paper}
+	This report closely follows the work by Ren Qing-dao-er-ji and Yuping Wang in their paper "A new hybrid genetic algorithm for job shop scheduling problem" \cite{wang2012new}. This report closely follows the structure of the documented GA with additional algorithms described in other papers.
+	
+	\paragraph{Concentration based selection}
+	The paper defines a method complex method of Gauging the similarity between two solutions, this is used in conjunction with a fitness value when selecting form the population for crossover. This is used to reduce early convergence. 
+	
+	\paragraph{Critical Path Mutation}
+	A method of mutating a solution based on the critical path was used, this is documented later (section \ref{mutmethods}), this specific algorithm was out fo scope for this project but would have been the first to implemented in future work as the results provided in the paper seem very promising.
+	
+	\paragraph{Local Search}
+	The paper describes using a limited local search operator after mutation to increase the quality of the new child solutions, this was implemented in this project and it was found to be highly beneficial to the performance of the GA.
+	
+	\paragraph{Results}
+	The results sown in the paper are some of the best in the field, other attempts have been shown alongside for  comparison.
+	A criticism is that (along with many other papers on this subject) only the generation count is recorded, without any time measures. The specifications of the hardware are given, but not how long the proposed total algorithm will take. Additionally, the 
+	
+	\section{Methodology}
+	The method for designing an effective GA was to implement and experiment with a section of different Crossover/Mutation/GA structure/Solution Generation techniques, some from the literature and some original for this report.
+	
+	\paragraph{Library Use}
+	The Implementation was built on top of a provided utility library for generating random solutions, it was also used for solution validating and fitness calculation.\\
+	The Apache HttpComponents Library, and Google's Gson Library were used in the network distribution code
+	
+	\paragraph{Implementation of Literature}
+	A mixture of various functions and techniques described by the literature were implemented and the effects of combining them into a working genetic algorithm was recorded.
+	
+	\subsection{Solution Quality Metrics}
+	As the Genetic algorithm is running, a method was needed to easily gauge progress and to spot problems. This was achieved by calculating the average fitness of various percentile sections of the population, and printing this to the output every generation along with other statistics like the current best fitness and  best all time fitness.  Divergence is calculated by comparing the average fitness of the entire population compared to same average of the last generation.
+	See Figure \ref{fig:genalgrunning} for a sample output.
+	
+	\subsection{Initial population generation}
+	A theory that was tested was that if the initial seed population was of a higher quality than a pure random population, then this would increase the efficiency of the overall evolution. Three new algorithms were created and another which generated random solutions and then optimised them with the Feasibility Algorithm were tested.
+	
+	\paragraph{Job Runtime Priority}
+	This generation technique ordered jobs by their total runtime, and gave  scheduling priority to the longest running jobs. The theory behind this was that re-arranging smaller operations would always cause less disruption than moving large operations, so it may be beneficial to have the longest running operations in their most optimal place as soon as possible.
+	
+	\paragraph{Operation Order Priority}
+	This generation technique attempted to place the first operation of all job first, followed by the second operation of all jobs until all operations were placed. The theory behind this was to aim to reduce machine idle time by reducing instances where operations were scheduled before there prerequisite operations were finished. This follows a similar concept to the feasibility optimisation algorithm, but without attempting to fix dependencies.
+	
+	\paragraph{Best Random / Best Hybrid}
+	This solution generator would generate a pool of either random solutions, or solutions created by other generators and return the solution form the pool with the best fitness. The pool size could be adjusted, but it was found that a size of 128 worked best.
+	
+	\paragraph{Feasibility Optimised}
+	In the paper by \cite{wang2012new}, a solution is considered feasible if every operation is scheduled either at the same time or after any prerequisite operations on other machines. In the paper, only solutions that are feasible are considered for fitness calculations. This report implements a method that attempts to turn any solution into a feasible solution, however not all problems can have a feasible solution, and not all solutions can be made 100\% feasible. If only feasible solutions are considered, then the total set of possible solutions is vastly reduced, however the algorithm in this report maintains enough variance that population diversity is still high enough for genetic evolution. 
+	
+	\figuremacroW
+	{infeasible}
+	{Disjunctive graph of an Infeasible solution}
+	{\cite{wang2012new}}
+	{1.0}
+	\figuremacroW
+	{good}
+	{Disjunctive graph of the fixed feasible solution}
+	{Notice how the operation order of the machines never heads to the left\cite{wang2012new}}
+	{1.0}
+	
+	This solution uses a modified version of the Best Random generator, where each random solution is optimised before comparison.
+	
+	\subsection{Selection}
+	Three different methods of Selection were attempted.
+	
+	\paragraph{Roulette Selection}
+	The population is sorted by fitness, the solutions with the best fitness have a higher chance of being selected for crossover.
+	
+	\paragraph{Experimental Selection}
+	The population is sorted by fitness, then each solution is paired with all solutions that have a lower fitness than itself.
+	
+	\paragraph{Tournament}
+	A random selection of the population is taken, this is then sorted by fitness, and then the best solutions in this pool are paired together for crossover.
+	
+	\subsection{Crossover}
+	Five different crossover functions were implemented.
+	\paragraph{Single and Multi-Point}
+	A random machine ID is selected from the two solutions and then a crossover point is selected randomly from the list of operations, everything after this point is swapped over from the two solutions. For Multi-point, two random crossover points are selected and everything in-between them is swapped. This can create invalid solutions as there will be duplicate jobs within the job list, there are many different approaches to fixing this, the method used by this report was to remove the duplicates and fill in the blanks with the missing job operations, ordered by the lowest operation ID.
+	
+	\paragraph{Machine Swap}
+	This method selects an entire set of operations from a machine and swaps it completely with the list from the corresponding machine in another solution. This has the benefit that a solution will always be valid, but the total amount of unique outcomes  for two input solutions is limited by the number of machines. This is used in the paper by \cite{wang2012new}
+	
+	\paragraph{Partially Matched }
+	Two crossover points are selected and the containing operations are swapped, similar to Multi-Point Crossover. The positions of the operations in each matching swapped sections are used to form a lookup table, this is then used to replace duplicate operations.  \cite{sivanandam2007introduction}
+	
+	\paragraph{Liang Gao}
+	This crossover follows a method described by \cite{gao2011efficient}. The set of jobs is split randomly into two sets. Jobs in set 1 are copied into the same position in child A as parent 1, and jobs in set 2 are copied into the same position in child B as Parent 2. Then the empty spaces are filled in according to the order of the opposing parent. Child A fills in the empty spaces according to the order of operations from Parent B, and Child B from Parent A. This is demonstrated in Figure \ref{fig:cx}. It is possible in certain situations that a child will be identical to the a parent, so this must be checked for if it is an undesirable outcome.
+	
+	\figuremacroW
+	{cx}
+	{Liang Gao Crossover}
+	{Notice how Child B is identical to Parent 2}
+	{1.0}
+	
+	\subsection{Mutation}\label{mutmethods}
+	\paragraph {Critical Path Mutation / Local search}
+	If the critical path of a solution can be determined, the paper by \cite{gao2011efficient} describes a method wherein if two or more operations on the critical paths are placed consecutively on the same machine, then all permutations of the order of these operations is searched for fitness improvements. This was not implemented in this report as the complexity of determining the critical path was out of the scope for this investigation.
+	
+	\paragraph{Operation Mutation}
+	This is theoretically the simplest form of Mutation, a random machine is picked, and then two of the operations within it are swapped. This was the mutation operator used in this investigation.
+	
+	\subsection{GA Structure}
+	There are many large decisions and small nuances to consider when designing a GA, mainly to do with handling the population. The implementation of this report tried out several different GA structures, the difference are detailed below. 
+	
+	\paragraph{Child Placement}
+	When new children are generated, do they replace their parents or are they inserted into the population along with their parents? Replacing parents can overwrite good solutions, and keeping parents decreases diversity.
+	
+	\paragraph{Population Size}
+	The size of the population is also an area which can have great effect on the performance fo the GA, too small and there will not be enough diversity, too large and the rate of improvement will drop and the processing time for each generation may become infeasible. If the population size is to be kept constant which members are removed when the size increases?
+	
+	\paragraph{Mutation}
+	The  mutation operations could apply only to new children as they are generated, or the entire/subset of the population could be mutated every generation.
+	
+	\paragraph{Duplicate Solutions}
+	This is simply to decide whether duplicate identical solutions are allowed in the population. Ensuring no duplicates is a substantial and time consuming task, on the other hand, clones can quickly reduce diversity and cause early convergence.
+	
+	\paragraph{Reset operation}
+	If the population is seen to converge on a non-optimal solution, then the entire population is mutated and the top solutions are removed. This could be  used as a technique to escape from a local maximum without fully restarting the algorithm for scratch. The criterion for initiating a reset could be adjusted beforehand and during the operation of the GE.
+	
+	\subsection{Live Parameter adjustment}
+	Almost all of the parameters within the GA can be altered during runtime, different techniques were tried to couple the live population metrics to the GA parameters, such as increasing the amount of crossovers as overall fitness decreased, or increasing the total population size depending on population diversity.
+	
+	\subsection{Termination Procedure}
+	While running an GA indefinitely until a lower bound is reached is a viable approach, this investigation required additional termination events to enable the analysis of the effectiveness of different GA parameters, in order to find the optimal settings for each different JSS problem. The additional termination events were based on: Total Time taken, Generation Count, and Population Diversity.
+	
+	\subsection{Distribution}
+	To achieve data for the performance of GA parameters for each supplied JSS problem, the program was distributed over a network of computers. Each computer would ask for a set of parameters from a dispatch server, run the GA with these parameters and then return the results.
+	
+	\paragraph{Network system design}
+	For the sake of simplicity the communication protocol used was HTTP, and the data encoding used was JSON. As JSON can easily be converted to and from Java objects. The dispatch server runs a simple HTTP web-server, listening for requests and sending GA parameters (known as WorkOrders in the implementation) to the worker. The worker then returns the result of the GA (WorkResponce) as HTTP POST data. This is stored in a results file by the dispatch server. 
+	
+	\paragraph{Work Management}
+	The Dispatch server keeps track of which jobs have been dispatched and not returned, and will remove them from the list if they are not returned within a specific time limit. This means that if a worker crashes or goes offline and does not respond with a result, the same job will be resent to another worker at a later time. Each time a job is dispatched or returned the entire state is saved to disk, this means the dispatch server can be taken down and modified at any time.
+	
+	\paragraph{Job creation}
+	The method for determining the parameters to send to a client could include an entirely separate genetic algorithm within itself. This was out of the scope for this project, so a very basic hill-climber approach was implemented. When an request for a job is received, the list of JSS problems is searched to see which has the fewest jobs completed, this is then passed ot a function which generates GA parameters for this problem. This function initially increases the population size and maximum generation limit for each run completed until completing a run would take too long. It then takes the best run so far and randomly mutates it until a better set of parameters is found.
+	
+	\section{Experiment Plan}
+	Present an experimental plan to be used to investigate your approach
+	
+	\section{Results}
+	Present your results along with a basic statistical analysis.
+	
+	\subsection{Feasibility Optimisations}
+	\figuremacroW
+	{p100rnd}
+	{Problem 100, Random Solution}
+	{Fitness 2471}
+	{1.0}
+	\figuremacroW
+	{p100rndopt}
+	{Problem 100, Random Solution, Optimised}
+	{Fitness 1496}
+	{1.0}
+	
+	\section{Conclusions}
+	Critically analyse and reflect on the approach that you have taken. How do your results compare to those published? If your results are not as good as envisaged would you adopt a different approach to solving the problem.
+	
+	
+	\bibliographystyle{acmsiggraph}
+	\bibliography{report}
+	
+	\section{Appendix}
+	\onecolumn
+	\clearpage
+	\begin{table}[h!]
+		\footnotesize	
+		\vspace{5pt}
+		\begin{center}
+			\subtable
+			{
+				\begin{tabular}{lllllll||}
+					 & Goal   & Size   & Best & Gen & Pop & Total \\ 
+					 &  &    & Score &   &  Size & Time \\ \hline \\
+					1   & 1005 & 15X15  & \cellcolor[rgb]{1,0.76,0.43}1595    & 17  & 1228 & 21.26 \\
+					2   & 953  & 15X15  & \cellcolor[rgb]{1,0.87,0.49}1452    & 24  & 128  & 3.47  \\
+					3   & 1036 & 15X15  & \cellcolor[rgb]{0.92,0.88,0.48}1487 & 21  & 418  & 20.41 \\
+					4   & 973  & 15X15  & \cellcolor[rgb]{1,0.49,0.27}1687    & 14  & 428  & 20.44 \\
+					5   & 940  & 15X15  & \cellcolor[rgb]{1,0.52,0.29}1615    & 30  & 336  & 20.41 \\
+					6   & 1134 & 15X15  & \cellcolor[rgb]{0.98,0.91,0.51}1693 & 32  & 297  & 20.29 \\
+					7   & 1103 & 15X15  & \cellcolor[rgb]{0.77,0.82,0.41}1437 & 30  & 739  & 20.51 \\
+					8   & 980  & 15X15  & \cellcolor[rgb]{0.97,0.9,0.5}1448   & 34  & 1034 & 20.72 \\
+					9   & 1020 & 15X15  & \cellcolor[rgb]{1,0.53,0.3}1744     & 22  & 1223 & 21.18 \\
+					10  & 940  & 15X15  & \cellcolor[rgb]{1,0.52,0.29}1613    & 45  & 939  & 20.89 \\
+					11  & 1254 & 20X15  & \cellcolor[rgb]{0.92,0.89,0.48}1805 & 45  & 323  & 20.37 \\
+					12  & 1267 & 20X15  & \cellcolor[rgb]{0.82,0.84,0.43}1703 & 44  & 328  & 20.40 \\
+					13  & 1243 & 20X15  & \cellcolor[rgb]{0.72,0.8,0.39}1557  & 61  & 489  & 20.63 \\
+					14  & 1329 & 20X15  & \cellcolor[rgb]{0.67,0.78,0.38}1615 & 66  & 343  & 20.62 \\
+					15  & 1163 & 20X15  & \cellcolor[rgb]{0.86,0.86,0.45}1608 & 84  & 245  & 20.37 \\
+					16  & 1211 & 20X15  & \cellcolor[rgb]{0.85,0.85,0.45}1664 & 58  & 419  & 20.52 \\
+					17  & 1306 & 20X15  & \cellcolor[rgb]{0.87,0.86,0.46}1810 & 61  & 677  & 21.38 \\
+					18  & 1315 & 20X15  & \cellcolor[rgb]{0.76,0.81,0.41}1697 & 57  & 533  & 20.71 \\
+					19  & 1202 & 20X15  & \cellcolor[rgb]{0.85,0.85,0.45}1645 & 66  & 480  & 20.50 \\
+					20  & 1213 & 20X15  & \cellcolor[rgb]{0.98,0.91,0.5}1808  & 26  & 314  & 20.39 \\
+					21  & 1217 & 20X20  & \cellcolor[rgb]{1,0.46,0.25}2130    & 61  & 239  & 20.75 \\
+					22  & 1314 & 20X20  & \cellcolor[rgb]{1,0.72,0.4}2111     & 55  & 409  & 20.75 \\
+					23  & 1248 & 20X20  & \cellcolor[rgb]{1,0.91,0.51}1879    & 54  & 135  & 20.22 \\
+					24  & 1284 & 20X20  & \cellcolor[rgb]{1,0.49,0.28}2222    & 35  & 278  & 20.82 \\
+					25  & 1256 & 20X20  & \cellcolor[rgb]{1,0.68,0.38}2049    & 83  & 214  & 20.64 \\
+					26  & 1245 & 20X20  & \cellcolor[rgb]{1,0.71,0.4}2009     & 99  & 337  & 21.01 \\
+					27  & 1403 & 20X20  & \cellcolor[rgb]{1,0.77,0.43}2216    & 97  & 451  & 20.89 \\
+					28  & 1387 & 20X20  & \cellcolor[rgb]{1,0.78,0.43}2188    & 59  & 440  & 22.04 \\
+					29  & 1352 & 20X20  & \cellcolor[rgb]{0.94,0.89,0.49}1962 & 79  & 294  & 20.59 \\
+					30  & 1277 & 20X20  & \cellcolor[rgb]{1,0.68,0.38}2082    & 68  & 285  & 20.52 \\
+					31  & 1764 & 30X15  & \cellcolor[rgb]{0.72,0.8,0.4}2214   & 108 & 247  & 20.39 \\
+					32  & 1774 & 30X15  & \cellcolor[rgb]{0.71,0.79,0.39}2216 & 129 & 348  & 20.69 \\
+					33  & 1733 & 30X15  & \cellcolor[rgb]{0.76,0.81,0.41}2234 & 118 & 167  & 20.38 \\
+					34  & 1828 & 30X15  & \cellcolor[rgb]{0.68,0.78,0.38}2225 & 85  & 170  & 20.39 \\
+					35  & 1754 & 30X15  & \cellcolor[rgb]{0.86,0.85,0.45}2417 & 69  & 207  & 20.76 \\
+					36  & 1777 & 30X15  & \cellcolor[rgb]{0.76,0.81,0.41}2290 & 77  & 178  & 20.44 \\
+					37  & 1771 & 30X15  & \cellcolor[rgb]{0.79,0.83,0.42}2333 & 60  & 314  & 45.72 \\
+					38  & 1673 & 30X15  & \cellcolor[rgb]{0.7,0.79,0.38}2067  & 95  & 237  & 20.56 \\
+					39  & 1764 & 30X15  & \cellcolor[rgb]{0.76,0.81,0.41}2286 & 78  & 357  & 20.88 \\
+					40  & 1608 & 30X15  & \cellcolor[rgb]{0.8,0.83,0.43}2136  & 79  & 278  & 20.89 \\
+					41  & 1850 & 30X20  & \cellcolor[rgb]{0.85,0.85,0.45}2547 & 89  & 272  & 20.03 \\
+					42  & 1761 & 30X20  & \cellcolor[rgb]{0.95,0.9,0.49}2579  & 139 & 171  & 21.34 \\
+					43  & 1710 & 30X20  & \cellcolor[rgb]{0.91,0.88,0.48}2439 & 90  & 180  & 20.91 \\
+					44  & 1820 & 30X20  & \cellcolor[rgb]{0.92,0.88,0.48}2611 & 132 & 168  & 20.62 \\
+					45  & 1785 & 30X20  & \cellcolor[rgb]{0.96,0.9,0.5}2630   & 90  & 157  & 20.48 \\
+					46  & 1940 & 30X20  & \cellcolor[rgb]{0.92,0.88,0.48}2778 & 133 & 168  & 20.96 \\
+					47  & 1751 & 30X20  & \cellcolor[rgb]{0.89,0.87,0.47}2470 & 66  & 180  & 20.74 \\
+					48  & 1770 & 30X20  & \cellcolor[rgb]{0.92,0.89,0.48}2546 & 76  & 159  & 20.58 \\
+					49  & 1758 & 30X20  & \cellcolor[rgb]{0.9,0.88,0.47}2497  & 116 & 217  & 21.16 \\
+					50  & 1678 & 30X20  & \cellcolor[rgb]{0.92,0.89,0.48}2415 & 131 & 149  & 20.65 \\
+					51  & 2760 & 50X15  & \cellcolor[rgb]{0.7,0.79,0.38}3416  & 140 & 113  & 20.54 \\
+					52  & 2756 & 50X15  & \cellcolor[rgb]{0.7,0.79,0.38}3411  & 171 & 244  & 21.32 \\
+					53  & 2717 & 50X15  & \cellcolor[rgb]{0.62,0.75,0.35}3167 & 145 & 187  & 21.58 \\
+					54  & 2813 & 50X15  & \cellcolor[rgb]{0.59,0.74,0.34}3209 & 125 & 188  & 19.27 \\
+					55  & 2679 & 50X15  & \cellcolor[rgb]{0.66,0.77,0.37}3227 & 133 & 167  & 21.01 \\
+					56  & 2781 & 50X15  & \cellcolor[rgb]{0.62,0.75,0.35}3243 & 139 & 303  & 22.11 \\
+					57  & 2943 & 50X15  & \cellcolor[rgb]{0.67,0.77,0.37}3553 & 48  & 178  & 21.56 \\
+					58  & 2885 & 50X15  & \cellcolor[rgb]{0.61,0.75,0.35}3343 & 123 & 158  & 20.82 \\
+					59  & 2655 & 50X15  & \cellcolor[rgb]{0.67,0.77,0.37}3209 & 143 & 199  & 21.65 \\
+					60  & 2723 & 50X15  & \cellcolor[rgb]{0.57,0.73,0.33}3065 & 140 & 157  & 21.01 \\
+					61  & 2868 & 50X20  & \cellcolor[rgb]{0.76,0.81,0.41}3717 & 111 & 154  & 21.85 \\
+					62  & 2848 & 50X20  & \cellcolor[rgb]{0.81,0.83,0.43}3802 & 182 & 258  & 23.14 \\
+					63  & 2755 & 50X20  & \cellcolor[rgb]{0.69,0.78,0.38}3376 & 220 & 214  & 21.28 \\
+					64  & 2697 & 50X20  & \cellcolor[rgb]{0.75,0.81,0.41}3457 & 144 & 300  & 22.45 \\
+					65  & 2725 & 50X20  & \cellcolor[rgb]{0.76,0.81,0.41}3512 & 166 & 168  & 21.12 \\
+					66  & 2845 & 50X20  & \cellcolor[rgb]{0.72,0.8,0.4}3571   & 187 & 223  & 22.72 \\
+					67  & 2812 & 50X20  & \cellcolor[rgb]{0.82,0.84,0.44}3788 & 158 & 181  & 20.32 \\
+					68  & 2764 & 50X20  & \cellcolor[rgb]{0.69,0.78,0.38}3400 & 132 & 107  & 20.82 \\
+					69  & 3071 & 50X20  & \cellcolor[rgb]{0.67,0.78,0.37}3722 & 131 & 130  & 21.27 \\
+					70  & 2995 & 50X20  & \cellcolor[rgb]{0.72,0.8,0.4}3766   & 166 & 213  & 18.17 \\
+					71  & 5464 & 100X20 & \cellcolor[rgb]{0.73,0.8,0.4}6922   & 136 & 148  & 29.15 \\
+				\end{tabular}\centering
+			}
+			\subtable
+			{
+				\begin{tabular}{||lllllll}
+					 & Goal   & Size   & Best & Generation & Pop & Total \\ 
+					 &  &    & Score &   &  Size & Time \\ \hline \\
+					72  & 5181 & 100X20 & \cellcolor[rgb]{0.7,0.79,0.38}6404  & 154 & 227  & 27.89 \\
+					73  & 5552 & 100X20 & \cellcolor[rgb]{0.68,0.78,0.38}6765 & 192 & 206  & 22.47 \\
+					74  & 5339 & 100X20 & \cellcolor[rgb]{0.69,0.78,0.38}6537 & 146 & 153  & 26.69 \\
+					75  & 5392 & 100X20 & \cellcolor[rgb]{0.7,0.79,0.38}6656  & 159 & 187  & 29.55 \\
+					76  & 5342 & 100X20 & \cellcolor[rgb]{0.7,0.79,0.38}6598  & 174 & 278  & 50.97 \\
+					77  & 5436 & 100X20 & \cellcolor[rgb]{0.69,0.78,0.38}6681 & 161 & 206  & 21.02 \\
+					78  & 5394 & 100X20 & \cellcolor[rgb]{0.68,0.78,0.38}6591 & 108 & 212  & 36.78 \\
+					79  & 5358 & 100X20 & \cellcolor[rgb]{0.69,0.78,0.38}6606 & 146 & 196  & 26.21 \\
+					80  & 5183 & 100X20 & \cellcolor[rgb]{0.7,0.79,0.38}6402  & 111 & 136  & 24.81 \\
+					81  & 872  & 10X10  & \cellcolor[rgb]{1,0.7,0.39}1411     & 9   & 528  & 20.16 \\
+					82  & 742  & 10X10  & \cellcolor[rgb]{0.89,0.87,0.47}1044 & 10  & 1220 & 20.36 \\
+					83  & 578  & 20X15  & \cellcolor[rgb]{0.85,0.85,0.45}791  & 65  & 562  & 20.86 \\
+					84  & 566  & 20X15  & \cellcolor[rgb]{0.96,0.9,0.5}835    & 66  & 237  & 20.41 \\
+					85  & 563  & 20X15  & \cellcolor[rgb]{0.94,0.89,0.49}820  & 54  & 537  & 20.57 \\
+					86  & 55   & 6X6    & \cellcolor[rgb]{0.43,0.67,0.27}55   & 3   & 541  & 20.03 \\
+					87  & 718  & 10X10  & \cellcolor[rgb]{1,0.9,0.5}1086      & 18  & 278  & 20.08 \\
+					88  & 1164 & 20X5   & \cellcolor[rgb]{0.55,0.72,0.32}1283 & 27  & 678  & 20.18 \\
+					89  & 666  & 10X5   & \cellcolor[rgb]{0.45,0.68,0.28}678  & 4   & 178  & 20.02 \\
+					90  & 655  & 10X5   & \cellcolor[rgb]{0.55,0.72,0.32}725  & 5   & 1064 & 20.14 \\
+					91  & 588  & 10X5   & \cellcolor[rgb]{0.55,0.72,0.32}650  & 6   & 626  & 20.07 \\
+					92  & 567  & 10X5   & \cellcolor[rgb]{0.69,0.78,0.38}698  & 2   & 528  & 20.06 \\
+					93  & 593  & 10X5   & \cellcolor[rgb]{0.43,0.67,0.27}593  & 0   & 128  & 0.01  \\
+					94  & 926  & 15X5   & \cellcolor[rgb]{0.43,0.67,0.27}926  & 13  & 131  & 0.03  \\
+					95  & 869  & 15X5   & \cellcolor[rgb]{0.5,0.7,0.3}922     & 10  & 1170 & 20.23 \\
+					96  & 863  & 15X5   & \cellcolor[rgb]{0.43,0.67,0.27}863  & 9   & 119  & 0.14  \\
+					97  & 951  & 15X5   & \cellcolor[rgb]{0.44,0.67,0.27}955  & 6   & 678  & 20.11 \\
+					98  & 958  & 15X5   & \cellcolor[rgb]{0.43,0.67,0.27}958  & 0   & 128  & 0.03  \\
+					99  & 1222 & 20X5   & \cellcolor[rgb]{0.46,0.69,0.29}1253 & 8   & 521  & 20.13 \\
+					100 & 1039 & 20X5   & \cellcolor[rgb]{0.43,0.67,0.27}1039 & 0   & 128  & 0.04  \\
+					101 & 1150 & 20X5   & \cellcolor[rgb]{0.43,0.67,0.27}1150 & 10  & 78   & 0.03  \\
+					102 & 1292 & 20X5   & \cellcolor[rgb]{0.43,0.67,0.27}1292 & 0   & 128  & 0.03  \\
+					103 & 1207 & 20X5   & \cellcolor[rgb]{0.45,0.68,0.28}1225 & 24  & 1178 & 20.33 \\
+					104 & 717  & 10X10  & \cellcolor[rgb]{0.9,0.87,0.47}1014  & 18  & 379  & 20.13 \\
+					105 & 683  & 10X10  & \cellcolor[rgb]{0.85,0.85,0.45}939  & 8   & 365  & 20.10 \\
+					106 & 663  & 10X10  & \cellcolor[rgb]{0.86,0.86,0.45}915  & 12  & 1169 & 20.32 \\
+					107 & 685  & 10X10  & \cellcolor[rgb]{1,0.82,0.46}1065    & 9   & 628  & 20.21 \\
+					108 & 756  & 10X10  & \cellcolor[rgb]{0.88,0.87,0.46}1056 & 4   & 121  & 3.37  \\
+					109 & 954  & 15X10  & \cellcolor[rgb]{0.77,0.82,0.41}1243 & 16  & 567  & 20.35 \\
+					110 & 907  & 15X10  & \cellcolor[rgb]{0.71,0.79,0.39}1133 & 29  & 709  & 20.27 \\
+					111 & 1032 & 15X10  & \cellcolor[rgb]{0.52,0.71,0.31}1118 & 35  & 928  & 20.50 \\
+					112 & 857  & 15X10  & \cellcolor[rgb]{0.71,0.79,0.39}1067 & 27  & 777  & 20.39 \\
+					113 & 864  & 15X10  & \cellcolor[rgb]{0.99,0.91,0.51}1291 & 11  & 228  & 20.12 \\
+					114 & 1218 & 20X10  & \cellcolor[rgb]{0.62,0.76,0.35}1425 & 41  & 560  & 20.40 \\
+					115 & 1188 & 20X10  & \cellcolor[rgb]{0.74,0.8,0.4}1510   & 32  & 928  & 20.81 \\
+					116 & 1216 & 20X10  & \cellcolor[rgb]{0.58,0.73,0.33}1371 & 29  & 178  & 20.12 \\
+					117 & 1105 & 20X10  & \cellcolor[rgb]{0.69,0.78,0.38}1357 & 47  & 328  & 20.26 \\
+					118 & 1355 & 20X10  & \cellcolor[rgb]{0.64,0.76,0.36}1606 & 27  & 178  & 20.14 \\
+					119 & 1784 & 30X10  & \cellcolor[rgb]{0.52,0.71,0.31}1923 & 47  & 494  & 20.69 \\
+					120 & 1850 & 30X10  & \cellcolor[rgb]{0.43,0.67,0.27}1850 & 110 & 583  & 20.14 \\
+					121 & 1719 & 30X10  & \cellcolor[rgb]{0.45,0.68,0.28}1755 & 60  & 187  & 20.53 \\
+					122 & 1721 & 30X10  & \cellcolor[rgb]{0.5,0.7,0.3}1828    & 57  & 425  & 20.44 \\
+					123 & 1888 & 30X10  & \cellcolor[rgb]{0.62,0.75,0.35}2202 & 30  & 228  & 20.31 \\
+					124 & 1028 & 15X15  & \cellcolor[rgb]{0.9,0.87,0.47}1456  & 41  & 457  & 20.42 \\
+					125 & 1132 & 15X15  & \cellcolor[rgb]{1,0.89,0.5}1715     & 30  & 758  & 20.42 \\
+					126 & 943  & 15X15  & \cellcolor[rgb]{1,0.69,0.39}1532    & 23  & 712  & 20.51 \\
+					127 & 1128 & 15X15  & \cellcolor[rgb]{0.86,0.86,0.45}1558 & 26  & 458  & 20.57 \\
+					128 & 1055 & 15X15  & \cellcolor[rgb]{0.96,0.9,0.5}1549   & 41  & 128  & 3.47  \\
+					129 & 928  & 10X10  & \cellcolor[rgb]{0.85,0.85,0.45}1270 & 10  & 478  & 20.13 \\
+					130 & 733  & 10X10  & \cellcolor[rgb]{1,0.82,0.46}1139    & 13  & 1178 & 20.36 \\
+					131 & 830  & 10X10  & \cellcolor[rgb]{1,0.83,0.46}1286    & 9   & 1229 & 20.30 \\
+					132 & 793  & 10X10  & \cellcolor[rgb]{0.87,0.86,0.46}1102 & 26  & 970  & 20.22 \\
+					133 & 733  & 10X10  & \cellcolor[rgb]{1,0.36,0.2}1323     & 8   & 986  & 20.26 \\
+					134 & 930  & 10X10  & \cellcolor[rgb]{0.98,0.91,0.5}1385  & 11  & 1268 & 20.36 \\
+					135 & 326  & 10X10  & \cellcolor[rgb]{1,0.9,0.5}492       & 11  & 128  & 3.37  \\
+					136 & 779  & 10X10  & \cellcolor[rgb]{1,0.7,0.39}1260     & 9   & 569  & 20.15 \\
+					137 & 705  & 10X10  & \cellcolor[rgb]{1,0.72,0.4}1135     & 16  & 1118 & 20.27 \\
+					138 & 783  & 10X10  & \cellcolor[rgb]{1,0.21,0.12}1477    & 12  & 1233 & 20.42 \\
+					139 & 694  & 20X20  & \cellcolor[rgb]{1,0.8,0.45}1084     & 68  & 378  & 21.04 \\
+					140 & 713  & 20X20  & \cellcolor[rgb]{1,0.8,0.45}1118     & 62  & 292  & 49.64 \\
+					141 & 680  & 20X20  & \cellcolor[rgb]{1,0.7,0.39}1101     & 84  & 391  & 46.58 \\
+					142 & 734  & 20X20  & \cellcolor[rgb]{1,0.71,0.4}1185     & 70  & 226  & 20.64 \\
+				\end{tabular}\centering
+			}
+			
+			\caption{Best results for all problems}
+			\label{finalResults}
+		\end{center}
+		
 	\end{table}
-
-\figuremacroF
-{genalgrunning}
-{Output from EA}
-{Problem 119}
-{1.0}
-\figuremacroF
-{dispatchcmd}
-{Console output snippet from Dispatch Server}
-{Currently talking to 150 Clients}
-{1.0}
-
-
-
-
+	
+	\figuremacroF
+	{genalgrunning}
+	{Output from EA}
+	{Problem 119}
+	{1.0}
+	\figuremacroF
+	{dispatchcmd}
+	{Console output snippet from Dispatch Server}
+	{Currently talking to 150 Clients}
+	{1.0}
+	
 \end{document}
-
