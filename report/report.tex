@@ -112,9 +112,6 @@
 	To obtain a fitness score for a solution, it must be decoded into a final schedule. This process involves determining the start and end time for processing operations on each machine. To do this, the order of operations in the solution is followed for each machine until an operation cannot be scheduled due to a non-complete pre-requite operation, in this case the machine will sit idle until the operation can be processed. Once this process is finished, the total runtime can be determined and used as a fitness value. Other metrics could also be used for fitness (e.g maximum Idle time, or concurrent machine occupancy), but this report only uses runtime to compare solutions.
 	
 	\section{Previous  Work}
-	Discuss at least one previous published attempt at solving this or a similar problem. 
-	Critically comment on the method used and results obtained.
-	
 	Using GAs to solve the JSSP has been documented in multiple papers, each taking a different approach to optimise different parts of the GA process. As this is a permutation based problem with multiple constraints, the solutions which provide algorithms that are more tailored to fit the specifically JSSP rather than a general permutation problem seem to get the best results.
 	
 	\paragraph{Visualising Solutions}
@@ -262,12 +259,15 @@
 	\section{Experiment Plan}
 	%Present an experimental plan to be used to investigate your approach
 	The plan for the implementation was to first get the basic structure of a GA running with a basic single point crossover and simple mutation. In these early stage, creating a method for measuring the performance of the GA was crucial as this needed to be implemented before nay improvements could be made. \\
-	Once the performance measures where in place, additional algorithms could be implemented, as described in the Methodology section. The performance should be tuned based on a small set of problems initially for quick iteration times, problems 86,101, and 95 were chosen for use during the implementation stage.\\
+	Once the performance measures are in place, additional algorithms can be implemented, as described in the Methodology section. The performance should be tuned based on a small set of problems initially for quick iteration times, problems 86, 101, and 95 were chosen for use during the implementation stage.\\
 	After the specified functions and algorithms were implemented, the code should be analysed and experimented upon to increase performance and solution quality.\\
-	
+	After the algorithm has reached an adequate level of performance, different problems can be tested and the optimal parameters for each problem will be searched for. This task will be distributed over a network of computers to gather results quickly. The parameters for each problem will start with the smallest and quickest settings and then build up over time to allow the GA to run longer with larger populations and search spaces. Once the best set of parameters is found, this will mutated pseudo randomly in a local search fashion to try and gain small improvements.
 	
 	\section{Results}
-	Present your results along with a basic statistical analysis.
+	%Present your results along with a basic statistical analysis.
+	\subsection{Population Generation}
+		Using both Job runtime and operation order priority population generation did give a significant boost to the fitness of the first generation. However the amount of possible solutions they can generate is limited and thereafter they must fall back to randomness and therefore the befit of their use is limited and does not scale.\\
+		Using Feasibility optimised solutions for the initial population gave an extreme boost to solution quality, which carried over into many generation in the GA. For some problems the lower bound would be found in the initial population without running the GA at all. The algorithm is expensive to run, but the benefits vastly outlay this cost. A visual representation of the results of the algorithm is shown in Figure: \ref{fig:p100rnd} \& Figure: \ref{fig:p100rndopt} .
 	
 	\subsection{Feasibility Optimisations}
 	\figuremacroW
@@ -281,9 +281,29 @@
 	{Fitness 1496}
 	{1.0}
 	
-	\section{Conclusions}
-	Critically analyse and reflect on the approach that you have taken. How do your results compare to those published? If your results are not as good as envisaged would you adopt a different approach to solving the problem.
+	\subsection{Crossover}
+	It was observed that the crossover had the least effect on improving solution when compared to the mutation stage, generally crossovers that significantly changed the solution were overall damaging to fitness improvements. The Partially Matched crossover performed well but had a high processing time, while the Liang Gao algorithm worked quickly and tended to leave the fitness roughly the same or slightly better.
 	
+	\subsection{Mutation}
+	Operation mutation worked well in testing and as this is the smallest possible change that could be made to a solution it was theorised that altering the mutation operator would not be a worthwhile use of time.
+	
+	\subsection{GA structure}
+	Changing the structure of the GA provided the most significant changes to the rate of improvement and convergence.
+	The main issue was the convergence on local maximums, this is the reason for the use of the reset operation which worked well but did not fix the source of the problem. \\
+	Changing the GA parameters on the fly to increase diversity as a combative measure when the convergence rate rose did not prove effective as at this point the population was already on track to converge.\\
+	Using a small tournament to pick parents, and then a  small local search after the mutation operator, coupled with a function that guarantees a mutated child is not a clone of any other solution in the population was by far the most effective version of the GA found in this investigation. \\
+	
+	\subsection {Parameter Searching}
+	The distributed approach had many benefits, primarily an increase in productivity as it allowed for quickly testing out new theories easily while at the same time gathering thorough results for any previous ideas. This highlighted bugs in the GA code much quicker which saved a large amount of time as every time a bug was found, the entire results set may have to be wiped and restarted.
+	\\
+	Large problems had a tendency to time-out as a single generation could take as long as 40 minutes at times, this would mean that the dispatch server would think that the worker had gone off-line and re-distribute the job, and then run into the same issue on another machine. The distribution logic was constantly monitored, tweaked, and fixed throughout the experiment period. Using a network of 100 High-Spec desktop computers, each running 8 instances of the algorithm over the period of roughly a week, this project accumulated around 100'000 compute hours finding optimal GA parameters (Including several total restarts).
+	
+	\section{Conclusions}
+	%Critically analyse and reflect on the approach that you have taken. How do your results compare to those published? If your results are not as good as envisaged would you adopt a different approach to solving the problem.
+	This report concludes that when it comes to a specialised permutation based problem like JSSP, generic GA algorithms tend to be more destructive than constructive, the more logic than an algorithm has that is tailored to the specific problem the more effective it will be. Furthermore, in permutation problems in general, small mutation functions and local searches are much more powerful than the crossover operations.\\
+	Spending time to optimise the initial population can be extremely beneficial for certain problems, and is therefore worth the  implementation and processing time.\\
+	Maintaining diversity is key to avoiding convergence, and new fresh random solutions should be introduced into the population where possible to maintain diversity. In the case of this investigation, any duplicate was replaced with a completely random solution.\\
+	The results achieved by this investigation are reasonably close to the known lower bound for the given problems, although there are examples in the literature that perform better. Overall the key takeaway from this investigation is that there are many similar yet different approaches to solving JSSPs with Genetic Algorithms, the effectiveness of each vary wildly and only certain fine tuned combinations of algorithms can do well across a wide range of problems. Even then, the perfect parameters to input into the tuned GA is an entirely separate and equally large task in itself.
 	
 	\bibliographystyle{acmsiggraph}
 	\bibliography{report}
@@ -299,7 +319,8 @@
 			{
 				\begin{tabular}{lllllll||}
 					 & Goal   & Size   & Best & Gen & Pop & Total \\ 
-					 &  &    & Score &   &  Size & Time \\ \hline \\
+					 &  &    & Score &   &  Size & Time \\ \hline
+					 &  &   &  &   &   &  \\ 
 					1   & 1005 & 15X15  & \cellcolor[rgb]{1,0.76,0.43}1595    & 17  & 1228 & 21.26 \\
 					2   & 953  & 15X15  & \cellcolor[rgb]{1,0.87,0.49}1452    & 24  & 128  & 3.47  \\
 					3   & 1036 & 15X15  & \cellcolor[rgb]{0.92,0.88,0.48}1487 & 21  & 418  & 20.41 \\
@@ -377,7 +398,8 @@
 			{
 				\begin{tabular}{||lllllll}
 					 & Goal   & Size   & Best & Gen & Pop & Total \\ 
-					 &  &    & Score &   &  Size & Time \\ \hline \\
+					 &  &    & Score &   &  Size & Time\\ \hline
+					 &  &   &  &   &   &  \\ 
 					72  & 5181 & 100X20 & \cellcolor[rgb]{0.7,0.79,0.38}6404  & 154 & 227  & 27.89 \\
 					73  & 5552 & 100X20 & \cellcolor[rgb]{0.68,0.78,0.38}6765 & 192 & 206  & 22.47 \\
 					74  & 5339 & 100X20 & \cellcolor[rgb]{0.69,0.78,0.38}6537 & 146 & 153  & 26.69 \\
